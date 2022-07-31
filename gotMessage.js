@@ -1,10 +1,8 @@
 const fs = require('fs');
 const Discord = require('discord.js');
 const cooldowns = new Discord.Collection();
-const { Permissions } = require('discord.js');
 
 module.exports = async function (msg, bancho) {
-
 	//check if the message wasn't sent by the bot itself or another bot
 	if (!(msg.author.bot) || msg.channel.id === '892873577479692358') {
 		//Create a collection for the commands
