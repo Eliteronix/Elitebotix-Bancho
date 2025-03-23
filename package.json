@@ -17,11 +17,7 @@
   },
   "homepage": "https://github.com/Eliteronix/Elitebotix-Bancho#readme",
   "dependencies": {
-    "bancho.js": "^0.9.7",
-    "canvas": "^2.9.3",
-    "discord.js": "^14.1.2",
-    "dotenv": "^16.0.1",
-    "node-osu": "^2.2.1",
-    "sequelize": "^6.21.3"
+    "bancho.js": "^0.12.0",
+    "dotenv": "^16.0.1"
   }
 }
