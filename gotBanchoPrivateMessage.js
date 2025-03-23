@@ -4,8 +4,6 @@ const { DBElitebotixProcessQueue } = require('./dbObjects');
 // Replace utils and client dependencies
 
 module.exports = async function (bancho, message) {
-	process.send(`osuuser ${message.user.id}}`);
-
 	if (message.message === '!help') {
 		await message.user.sendMessage('/ /np - Get the pp values for the current beatmap with the current mods');
 		await message.user.sendMessage('!acc - Get the last map\'s pp value with the given accuracy');
@@ -158,12 +156,7 @@ module.exports = async function (bancho, message) {
 			priority: 9
 		});
 
-		await DBElitebotixProcessQueue.create({
-			guildId: 'none',
-			task: 'updateQueueChannels',
-			date: new Date(),
-			priority: 0
-		});
+		await updateQueueChannels();
 
 		let tasksInReach = existingQueueTasks.filter((task) => {
 			return Math.abs(ownStarRating - parseFloat(task.additions.split(';')[1])) < 1;
@@ -196,12 +189,7 @@ module.exports = async function (bancho, message) {
 			if (osuUserId == message.user.id) {
 				await existingQueueTasks[i].destroy();
 
-				await DBElitebotixProcessQueue.create({
-					guildId: 'none',
-					task: 'updateQueueChannels',
-					date: new Date(),
-					priority: 0
-				});
+				await updateQueueChannels();
 
 				return message.user.sendMessage('You have been removed from the queue for a 1v1 duel.');
 			}
@@ -443,3 +431,12 @@ module.exports = async function (bancho, message) {
 		}
 	}
 };
+
+async function updateQueueChannels() {
+	await DBElitebotixProcessQueue.create({
+		guildId: 'none',
+		task: 'updateQueueChannels',
+		date: new Date(),
+		priority: 0
+	});
+}
