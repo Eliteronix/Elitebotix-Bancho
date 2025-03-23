@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 module.exports = {
-	name: "Elitebotix Bun", // Name of your application
+	name: "Elitebotix Bancho", // Name of your application
 	script: "index.js", // Entry point of your application
 	interpreter: "bun", // Bun interpreter
 	watch: returnBoolean(process.env.SERVER), // Watch for file changes
