@@ -1,23 +1,42 @@
-const { getOsuPP, getOsuBeatmap, getMods, logDatabaseQueries, getUserDuelStarRating, getValidTournamentBeatmap, getModBits } = require('./utils');
-const { DBElitebotixProcessQueue } = require('./dbObjects');
+const { getOsuPP, getOsuBeatmap, getUserDuelStarRating, getValidTournamentBeatmap } = require('./utils');
+const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers } = require('./dbObjects');
 
 // Replace utils and client dependencies
 
 module.exports = async function (bancho, message) {
-	if (message.message === '!help') {
-		await message.user.sendMessage('/ /np - Get the pp values for the current beatmap with the current mods');
-		await message.user.sendMessage('!acc - Get the last map\'s pp value with the given accuracy');
-		await message.user.sendMessage('!with - Get the pp values for the last map with the given mods');
-		await message.user.sendMessage('!autohost <password> - Autohosts a lobby with tournament maps');
-		await message.user.sendMessage('!discord - Sends a link to the main Elitebotix discord');
-		await message.user.sendMessage('!play / !play1v1 / !queue1v1 - Queue up for 1v1 matches');
-		await message.user.sendMessage('!lastrequests - Shows the last 5 twitch requests again');
-		await message.user.sendMessage('!leave / !leave1v1 / !queue1v1-leave - Leave the queue for 1v1 matches');
-		await message.user.sendMessage('!r [mod] [StarRating] - Get a beatmap recommendation for your current duel StarRating. If you don\'t have your account connected to the bot (can be done by using /osu-link command in discord) nor didn\'t specify desired Star Rating, it will use default value of 4.5*');
-		await message.user.sendMessage('!unlink - Unlink your discord account from your osu! account');
 
-		//Listen to now playing / now listening and send pp info
-	} else if (message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)) {
+	if (!bancho.commands) {
+
+		//get all command files
+		const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+
+		//Add the commands from the command files to the client.commands collection
+		for (const file of commandFiles) {
+			const command = require(`./commands/${file}`);
+
+			// set a new item in the Collection
+			// with the key as the command name and the value as the exported module
+			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help });
+		}
+	}
+
+	let args = message.message.slice(1).trim().split(/ +/);
+
+	let commandName = args.shift().toLowerCase();
+
+	//Set the command and check for possible uses of aliases
+	let command = bancho.commands.find(cmd => cmd.name === commandName)
+		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(interaction.commandName));
+
+	if (!command) {
+		return message.user.sendMessage('Command not found. Use !help to get a list of all commands.');
+	}
+
+	command.execute(bancho, message, args);
+
+	return;
+	//Listen to now playing / now listening and send pp info
+	if (message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)) {
 		let beatmapId = message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)[0].replace(/.+\//gm, '');
 
 		let modBits = 0;
@@ -78,8 +97,7 @@ module.exports = async function (bancho, message) {
 	} else if (message.message === '!queue1v1' || message.message === '!play1v1' || message.message === '!play') {
 		await message.user.fetchFromAPI();
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBDiscordUsers !queue1v1');
-		let discordUser = await DBDiscordUsers.findOne({
+		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['osuUserId'],
 			where: {
 				osuUserId: message.user.id,
@@ -92,7 +110,6 @@ module.exports = async function (bancho, message) {
 			return message.user.sendMessage(`Please connect and verify your account with the bot on discord as a backup by using: '/osu-link connect username:${message.user.username}' [https://discord.gg/Asz5Gfe Discord]`);
 		}
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBElitebotixProcessQueue check queue task');
 		let existingQueueTasks = await DBElitebotixProcessQueue.findAll({
 			attributes: ['additions'],
 			where: {
@@ -125,7 +142,6 @@ module.exports = async function (bancho, message) {
 			}
 		}
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBElitebotixProcessQueue check queue task again');
 		//Check again in case the user spammed the command
 		existingQueueTasks = await DBElitebotixProcessQueue.findAll({
 			attributes: ['additions'],
@@ -147,7 +163,6 @@ module.exports = async function (bancho, message) {
 			}
 		}
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBElitebotixProcessQueue create queue task');
 		await DBElitebotixProcessQueue.create({
 			guildId: 'none',
 			task: 'duelQueue1v1',
@@ -175,7 +190,6 @@ module.exports = async function (bancho, message) {
 	} else if (message.message === '!queue1v1-leave' || message.message === '!leave1v1' || message.message === '!leave' || message.message === '!quit' || message.message === '!exit' || message.message === '!stop' || message.message === '!cancel') {
 		await message.user.fetchFromAPI();
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBElitebotixProcessQueue !queue1v1-leave');
 		let existingQueueTasks = await DBElitebotixProcessQueue.findAll({
 			attributes: ['id', 'additions'],
 			where: {
@@ -257,8 +271,7 @@ module.exports = async function (bancho, message) {
 				//
 			});
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBDiscordUsers !r');
-		const discordUser = await DBDiscordUsers.findOne({
+		const discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: [
 				'osuUserId',
 				'osuDuelProvisional',
@@ -321,8 +334,6 @@ module.exports = async function (bancho, message) {
 		process.send(`command ${command.name}`);
 
 		command.execute(message, args, null, [client, bancho]);
-	} else if (message.message === '!discord') {
-		message.user.sendMessage('Feel free to join the [https://discord.gg/Asz5Gfe Discord]');
 	} else if (message.message === '!lastrequests') {
 		await message.user.fetchFromAPI();
 		let userRequests = [];
@@ -412,8 +423,7 @@ module.exports = async function (bancho, message) {
 	} else if (message.message === '!unlink') {
 		await message.user.fetchFromAPI();
 
-		logDatabaseQueries(4, 'gotBanchoPrivateMessage.js DBDiscordUsers !unlink');
-		let discordUser = await DBDiscordUsers.findOne({
+		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['id', 'userId', 'osuVerified'],
 			where: {
 				osuUserId: message.user.id
@@ -439,4 +449,221 @@ async function updateQueueChannels() {
 		date: new Date(),
 		priority: 0
 	});
+}
+
+function getMods(input) {
+	let mods = [];
+	let modsBits = input;
+	let PFpossible = false;
+	let hasNC = false;
+	if (modsBits >= 1073741824) {
+		mods.push('MI');
+		modsBits = modsBits - 1073741824;
+	}
+	if (modsBits >= 536870912) {
+		mods.push('V2');
+		modsBits = modsBits - 536870912;
+	}
+	if (modsBits >= 268435456) {
+		mods.push('2K');
+		modsBits = modsBits - 268435456;
+	}
+	if (modsBits >= 134217728) {
+		mods.push('3K');
+		modsBits = modsBits - 134217728;
+	}
+	if (modsBits >= 67108864) {
+		mods.push('1K');
+		modsBits = modsBits - 67108864;
+	}
+	if (modsBits >= 33554432) {
+		mods.push('KC');
+		modsBits = modsBits - 33554432;
+	}
+	if (modsBits >= 16777216) {
+		mods.push('9K');
+		modsBits = modsBits - 16777216;
+	}
+	if (modsBits >= 8388608) {
+		mods.push('TG');
+		modsBits = modsBits - 8388608;
+	}
+	if (modsBits >= 4194304) {
+		mods.push('CI');
+		modsBits = modsBits - 4194304;
+	}
+	if (modsBits >= 2097152) {
+		mods.push('RD');
+		modsBits = modsBits - 2097152;
+	}
+	if (modsBits >= 1048576) {
+		mods.push('FI');
+		modsBits = modsBits - 1048576;
+	}
+	if (modsBits >= 524288) {
+		mods.push('8K');
+		modsBits = modsBits - 524288;
+	}
+	if (modsBits >= 262144) {
+		mods.push('7K');
+		modsBits = modsBits - 262144;
+	}
+	if (modsBits >= 131072) {
+		mods.push('6K');
+		modsBits = modsBits - 131072;
+	}
+	if (modsBits >= 65536) {
+		mods.push('5K');
+		modsBits = modsBits - 65536;
+	}
+	if (modsBits >= 32768) {
+		mods.push('4K');
+		modsBits = modsBits - 32768;
+	}
+	if (modsBits >= 16384) {
+		PFpossible = true;
+		modsBits = modsBits - 16384;
+	}
+	if (modsBits >= 8192) {
+		mods.push('AP');
+		modsBits = modsBits - 8192;
+	}
+	if (modsBits >= 4096) {
+		mods.push('SO');
+		modsBits = modsBits - 4096;
+	}
+	if (modsBits >= 2048) {
+		modsBits = modsBits - 2048;
+	}
+	if (modsBits >= 1024) {
+		mods.push('FL');
+		modsBits = modsBits - 1024;
+	}
+	if (modsBits >= 512) {
+		hasNC = true;
+		mods.push('NC');
+		modsBits = modsBits - 512;
+	}
+	if (modsBits >= 256) {
+		mods.push('HT');
+		modsBits = modsBits - 256;
+	}
+	if (modsBits >= 128) {
+		mods.push('RX');
+		modsBits = modsBits - 128;
+	}
+	if (modsBits >= 64) {
+		if (!hasNC) {
+			mods.push('DT');
+		}
+		modsBits = modsBits - 64;
+	}
+	if (modsBits >= 32) {
+		if (PFpossible) {
+			mods.push('PF');
+		} else {
+			mods.push('SD');
+		}
+		modsBits = modsBits - 32;
+	}
+	if (modsBits >= 16) {
+		mods.push('HR');
+		modsBits = modsBits - 16;
+	}
+	if (modsBits >= 8) {
+		mods.push('HD');
+		modsBits = modsBits - 8;
+	}
+	if (modsBits >= 4) {
+		mods.push('TD');
+		modsBits = modsBits - 4;
+	}
+	if (modsBits >= 2) {
+		mods.push('EZ');
+		modsBits = modsBits - 2;
+	}
+	if (modsBits >= 1) {
+		mods.push('NF');
+		modsBits = modsBits - 1;
+	}
+
+	return mods.reverse();
+}
+
+function getModBits(input, noVisualMods) {
+	let modBits = 0;
+
+	if (input === 'NM') {
+		return modBits;
+	}
+
+	for (let i = 0; i < input.length; i += 2) {
+		if (input.substring(i, i + 2) === 'MI' && !noVisualMods) {
+			modBits += 1073741824;
+		} else if (input.substring(i, i + 2) === 'V2') {
+			modBits += 536870912;
+		} else if (input.substring(i, i + 2) === '2K') {
+			modBits += 268435456;
+		} else if (input.substring(i, i + 2) === '3K') {
+			modBits += 134217728;
+		} else if (input.substring(i, i + 2) === '1K') {
+			modBits += 67108864;
+		} else if (input.substring(i, i + 2) === 'KC') {
+			modBits += 33554432;
+		} else if (input.substring(i, i + 2) === '9K') {
+			modBits += 16777216;
+		} else if (input.substring(i, i + 2) === 'TG') {
+			modBits += 8388608;
+		} else if (input.substring(i, i + 2) === 'CI') {
+			modBits += 4194304;
+		} else if (input.substring(i, i + 2) === 'RD') {
+			modBits += 2097152;
+		} else if (input.substring(i, i + 2) === 'FI' && !noVisualMods) {
+			modBits += 1048576;
+		} else if (input.substring(i, i + 2) === '8K') {
+			modBits += 524288;
+		} else if (input.substring(i, i + 2) === '7K') {
+			modBits += 262144;
+		} else if (input.substring(i, i + 2) === '6K') {
+			modBits += 131072;
+		} else if (input.substring(i, i + 2) === '5K') {
+			modBits += 65536;
+		} else if (input.substring(i, i + 2) === '4K') {
+			modBits += 32768;
+		} else if (input.substring(i, i + 2) === 'PF' && !noVisualMods) {
+			modBits += 16384;
+			modBits += 32;
+		} else if (input.substring(i, i + 2) === 'AP') {
+			modBits += 8192;
+		} else if (input.substring(i, i + 2) === 'SO' && !noVisualMods) {
+			modBits += 4096;
+		} else if (input.substring(i, i + 2) === 'FL') {
+			modBits += 1024;
+		} else if (input.substring(i, i + 2) === 'NC') {
+			if (!noVisualMods) {
+				modBits += 512;
+			}
+			modBits += 64;
+		} else if (input.substring(i, i + 2) === 'HT') {
+			modBits += 256;
+		} else if (input.substring(i, i + 2) === 'RX') {
+			modBits += 128;
+		} else if (input.substring(i, i + 2) === 'DT') {
+			modBits += 64;
+		} else if (input.substring(i, i + 2) === 'SD' && !noVisualMods) {
+			modBits += 32;
+		} else if (input.substring(i, i + 2) === 'HR') {
+			modBits += 16;
+		} else if (input.substring(i, i + 2) === 'HD' && (input.includes('FL') || !input.includes('FL') && !noVisualMods)) {
+			modBits += 8;
+		} else if (input.substring(i, i + 2) === 'TD') {
+			modBits += 4;
+		} else if (input.substring(i, i + 2) === 'EZ') {
+			modBits += 2;
+		} else if (input.substring(i, i + 2) === 'NF' && !noVisualMods) {
+			modBits += 1;
+		}
+	}
+
+	return modBits;
 }
