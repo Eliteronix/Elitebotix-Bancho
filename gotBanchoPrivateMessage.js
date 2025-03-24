@@ -187,30 +187,6 @@ module.exports = async function (bancho, message) {
 				return console.error('gotBanchoPrivateMessage.js | queue1v1', e);
 			}
 		}
-	} else if (message.message === '!queue1v1-leave' || message.message === '!leave1v1' || message.message === '!leave' || message.message === '!quit' || message.message === '!exit' || message.message === '!stop' || message.message === '!cancel') {
-		await message.user.fetchFromAPI();
-
-		let existingQueueTasks = await DBElitebotixProcessQueue.findAll({
-			attributes: ['id', 'additions'],
-			where: {
-				task: 'duelQueue1v1',
-			},
-		});
-
-		for (let i = 0; i < existingQueueTasks.length; i++) {
-			const osuUserId = existingQueueTasks[i].additions.split(';')[0];
-
-			if (osuUserId == message.user.id) {
-				await existingQueueTasks[i].destroy();
-
-				await updateQueueChannels();
-
-				return message.user.sendMessage('You have been removed from the queue for a 1v1 duel.');
-			}
-		}
-
-		return message.user.sendMessage('You are not in the queue for a 1v1 duel.');
-		// message starts with '!r'
 	} else if (message.message.toLowerCase().startsWith('!r')) {
 		let args = message.message.slice(2).trim().split(/ +/);
 
@@ -334,33 +310,6 @@ module.exports = async function (bancho, message) {
 		process.send(`command ${command.name}`);
 
 		command.execute(message, args, null, [client, bancho]);
-	} else if (message.message === '!lastrequests') {
-		await message.user.fetchFromAPI();
-		let userRequests = [];
-
-		for (let i = 0; i < bancho.sentRequests.length; i++) {
-			if (bancho.sentRequests[i].osuUserId == message.user.id) {
-				userRequests.push(bancho.sentRequests[i]);
-			}
-		}
-
-		if (userRequests.length === 0) {
-			return message.user.sendMessage('You have no requests since the last Elitebotix restart.');
-		}
-
-		//Remove everything but the last 5 requests
-		while (userRequests.length > 5) {
-			userRequests.shift();
-		}
-
-		//Resend the messages
-		await message.user.sendMessage(`Here are your last ${userRequests.length} twitch requests:`);
-		for (let i = 0; i < userRequests.length; i++) {
-			await message.user.sendMessage(userRequests[i].main);
-			if (userRequests[i].comment) {
-				await message.user.sendMessage(userRequests[i].comment);
-			}
-		}
 	} else if (message.message.toLowerCase().startsWith('!with')) {
 		let args = message.message.slice(5).trim().split(/ +/);
 		let mods = args.join('').toUpperCase();
@@ -420,25 +369,6 @@ module.exports = async function (bancho, message) {
 		mods = mods.join('');
 
 		message.user.sendMessage(`[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]] [${mods}] | ${acc}%: ${Math.round(accPP)}pp`);
-	} else if (message.message === '!unlink') {
-		await message.user.fetchFromAPI();
-
-		let discordUser = await DBElitebotixDiscordUsers.findOne({
-			attributes: ['id', 'userId', 'osuVerified'],
-			where: {
-				osuUserId: message.user.id
-			}
-		});
-
-		if (discordUser && discordUser.userId) {
-			discordUser.userId = null;
-			discordUser.osuVerified = false;
-			await discordUser.save();
-
-			return await message.user.sendMessage('Your discord account has been unlinked from your osu! account.');
-		} else {
-			await message.user.sendMessage('You have no discord account linked to your osu! account.');
-		}
 	}
 };
 
