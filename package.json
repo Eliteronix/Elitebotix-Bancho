@@ -20,5 +20,8 @@
     "bancho.js": "^0.12.0",
     "dotenv": "^16.0.1",
     "sequelize": "^6.37.6"
+  },
+  "devDependencies": {
+    "eslint": "^9.23.0"
   }
 }
