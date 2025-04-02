@@ -16,6 +16,7 @@ if (process.env.SERVER === 'Live') {
 }
 
 bancho.lastUserMaps = new Discord.Collection();
+bancho.autoHosts = [];
 
 //Listen to messages
 bancho.on('PM', async (message) => {
