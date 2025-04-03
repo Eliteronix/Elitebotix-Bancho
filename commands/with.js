@@ -8,8 +8,6 @@ module.exports = {
 		let modBits = getModBits(mods);
 		let oldBeatmap = bancho.lastUserMaps[message.user.id.toString()];
 
-		console.log(oldBeatmap);
-
 		if (!oldBeatmap) {
 			return message.user.sendMessage('Please /np a map first.');
 		}
