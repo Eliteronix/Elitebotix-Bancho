@@ -31,8 +31,6 @@ module.exports = async function (bancho, message) {
 
 	//Listen to now playing / now listening and send pp info
 	if (message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)) {
-		nowListening(bancho, message);
-
 		let command = bancho.commands.find(cmd => cmd.name === 'np');
 
 		return command.execute(bancho, message, args);
