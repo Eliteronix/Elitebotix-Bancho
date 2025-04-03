@@ -8,18 +8,20 @@ module.exports = {
 		let modBits = getModBits(mods);
 		let oldBeatmap = bancho.lastUserMaps[message.user.id.toString()];
 
+		console.log(oldBeatmap);
+
 		if (!oldBeatmap) {
 			return message.user.sendMessage('Please /np a map first.');
 		}
 
 		let beatmap = await getOsuBeatmap({ beatmapId: oldBeatmap.beatmapId, modBits: modBits });
 
-		bancho.lastUserMaps[message.user.id.toString()] = { beatmapId: beatmapId, modBits: modBits };
+		bancho.lastUserMaps[message.user.id.toString()] = { beatmapId: oldBeatmap.beatmapId, modBits: oldBeatmap.modBits };
 
-		let firstPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 95.00, 0, beatmap.maxCombo, client);
-		let secondPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 98.00, 0, beatmap.maxCombo, client);
-		let thirdPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 99.00, 0, beatmap.maxCombo, client);
-		let fourthPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 100.00, 0, beatmap.maxCombo, client);
+		let firstPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 95.00, 0, beatmap.maxCombo);
+		let secondPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 98.00, 0, beatmap.maxCombo);
+		let thirdPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 99.00, 0, beatmap.maxCombo);
+		let fourthPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 100.00, 0, beatmap.maxCombo);
 
 		mods = getMods(beatmap.mods);
 
