@@ -10,7 +10,6 @@ module.exports = {
 			}
 		}
 
-		await message.user.sendMessage('/ /np - Get the pp values for the current beatmap with the current mods');
 		await message.user.sendMessage('!acc - Get the last map\'s pp value with the given accuracy');
 		await message.user.sendMessage('!with - Get the pp values for the last map with the given mods');
 		await message.user.sendMessage('!play / !play1v1 / !queue1v1 - Queue up for 1v1 matches');
