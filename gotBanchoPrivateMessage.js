@@ -6,6 +6,11 @@ const fs = require('fs');
 // Replace utils and client dependencies
 
 module.exports = async function (bancho, message) {
+	if (message.self) return;
+
+	await message.user.fetchFromAPI();
+
+	if (message.user.username === process.env.OSUNAME) return;
 
 	if (!bancho.commands) {
 		//get all command files
