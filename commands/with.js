@@ -4,7 +4,6 @@ module.exports = {
 	name: 'with',
 	help: '!with - Get the pp values for the last map with the given mods',
 	async execute(bancho, message, args) {
-		let args = message.message.slice(5).trim().split(/ +/);
 		let mods = args.join('').toUpperCase();
 		let modBits = getModBits(mods);
 

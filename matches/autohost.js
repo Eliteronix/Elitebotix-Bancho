@@ -19,7 +19,7 @@ module.exports = {
 			createMessage = `Creating lobby with password ${password} ...`;
 		}
 
-		let banchoUser = bancho.getUser(osuUserId);
+		let banchoUser = bancho.getUser(osuUserId.toString());
 
 		await banchoUser.sendMessage(createMessage);
 

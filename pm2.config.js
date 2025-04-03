@@ -8,6 +8,7 @@ module.exports = {
 	ignore_watch: [
 		".git",
 		"node_modules",
+		"databases",
 	],
 	env: {
 		PATH: `${process.env.HOME}/.bun/bin:${process.env.PATH}`, // Add "~/.bun/bin/bun" to PATH

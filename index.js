@@ -12,8 +12,10 @@ const Banchojs = require('bancho.js');
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1 });
 
 bancho.connect();
+console.log('Connected to Bancho');
 
 bancho.lastUserMaps = {};
+bancho.sentRequests = [];
 bancho.autoHosts = [];
 
 //Listen to messages

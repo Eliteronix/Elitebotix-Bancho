@@ -19,7 +19,7 @@ module.exports = async function (bancho, message) {
 
 			// set a new item in the Collection
 			// with the key as the command name and the value as the exported module
-			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help });
+			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help, execute: command.execute });
 		}
 	}
 
@@ -34,7 +34,7 @@ module.exports = async function (bancho, message) {
 
 	//Set the command and check for possible uses of aliases
 	let command = bancho.commands.find(cmd => cmd.name === commandName)
-		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(interaction.commandName));
+		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName));
 
 	if (!command) {
 		return message.user.sendMessage('Command not found. Use !help to get a list of all commands.');
