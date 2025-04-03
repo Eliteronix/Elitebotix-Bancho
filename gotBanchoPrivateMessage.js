@@ -49,7 +49,6 @@ module.exports = async function (bancho, message) {
 
 	return;
 	if (message.message === '!queue1v1' || message.message === '!play1v1' || message.message === '!play') {
-		await message.user.fetchFromAPI();
 
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['osuUserId'],
@@ -265,7 +264,6 @@ module.exports = async function (bancho, message) {
 
 		let acc = parseFloat(args[0].replace(',', '.'));
 
-		await message.user.fetchFromAPI();
 		let oldBeatmap = bancho.lastUserMaps.get(message.user.id.toString());
 
 		if (!oldBeatmap) {
@@ -338,14 +336,17 @@ async function nowListening(bancho, message) {
 
 	let beatmap = await getOsuBeatmap({ beatmapId: beatmapId, modBits: modBits });
 
-	await message.user.fetchFromAPI();
+	console.log(`Got beatmap ${beatmap.beatmapId} from ${message.user.username} (${message.user.id})`);
 
 	bancho.lastUserMaps[message.user.id.toString()] = { beatmapId: beatmapId, modBits: modBits };
 
-	let firstPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 95.00, 0, beatmap.maxCombo, client);
-	let secondPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 98.00, 0, beatmap.maxCombo, client);
-	let thirdPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 99.00, 0, beatmap.maxCombo, client);
-	let fourthPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 100.00, 0, beatmap.maxCombo, client);
+	let firstPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 95.00, 0, beatmap.maxCombo);
+
+	console.log(`Got pp ${firstPP} from ${message.user.username} (${message.user.id})`);
+
+	let secondPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 98.00, 0, beatmap.maxCombo);
+	let thirdPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 99.00, 0, beatmap.maxCombo);
+	let fourthPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 100.00, 0, beatmap.maxCombo);
 
 	let mods = getMods(beatmap.mods);
 

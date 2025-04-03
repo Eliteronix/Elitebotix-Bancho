@@ -5,8 +5,6 @@ module.exports = {
 	alias: ['leave1v1', 'queue1v1-leave', 'quit', 'exit', 'stop', 'cancel'],
 	help: '!leave - Leave the queue for 1v1 matches',
 	async execute(bancho, message, args) {
-		await message.user.fetchFromAPI();
-
 		let existingQueueTasks = await DBElitebotixProcessQueue.findAll({
 			attributes: ['id', 'additions'],
 			where: {

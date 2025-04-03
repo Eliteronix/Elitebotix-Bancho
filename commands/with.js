@@ -6,8 +6,6 @@ module.exports = {
 	async execute(bancho, message, args) {
 		let mods = args.join('').toUpperCase();
 		let modBits = getModBits(mods);
-
-		await message.user.fetchFromAPI();
 		let oldBeatmap = bancho.lastUserMaps[message.user.id.toString()];
 
 		if (!oldBeatmap) {
