@@ -29,4 +29,12 @@ module.exports = {
 			priority: 0
 		});
 	},
+	async updateQueueChannels() {
+		await DBElitebotixProcessQueue.create({
+			guildId: 'none',
+			task: 'updateQueueChannels',
+			date: new Date(),
+			priority: 0
+		});
+	}
 };

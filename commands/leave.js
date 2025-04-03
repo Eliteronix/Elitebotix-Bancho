@@ -1,4 +1,5 @@
 const { DBElitebotixProcessQueue } = require('../dbObjects');
+const { updateQueueChannels } = require('../utils');
 
 module.exports = {
 	name: 'leave',

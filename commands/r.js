@@ -1,4 +1,5 @@
-const { getOsuPP, getOsuBeatmap, getMods, getModBits } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const { getValidTournamentBeatmap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const { DBElitebotixDiscordUsers } = require('../dbObjects');
 
 module.exports = {
 	name: 'r',

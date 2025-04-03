@@ -9,7 +9,5 @@ module.exports = {
 				await message.user.sendMessage(`The stupid dev forgot to add a help message for ${bancho.commands[i].name}. Sorry about that!`);
 			}
 		}
-
-		await message.user.sendMessage('!play / !play1v1 / !queue1v1 - Queue up for 1v1 matches');
 	},
 };
