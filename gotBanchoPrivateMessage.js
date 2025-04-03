@@ -255,34 +255,6 @@ module.exports = async function (bancho, message) {
 		}
 
 		message.user.sendMessage(`[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]]${modeText} + ${mod} | Beatmap ★: ${Math.floor(beatmap.starRating * 100) / 100}${hdBuff}| Your${specifiedRating ? ' specified' : ''} ${mod} duel ★: ${Math.floor(userStarRating * 100) / 100} | ${totalLength} ♫${beatmap.bpm} CS${beatmap.circleSize} AR${beatmap.approachRate} OD${beatmap.overallDifficulty}`);
-	} else if (message.message.toLowerCase().startsWith('!acc')) {
-		let args = message.message.slice(5).trim().split(/ +/);
-
-		if (!args[0]) {
-			return message.user.sendMessage('Please specify an accuracy.');
-		}
-
-		let acc = parseFloat(args[0].replace(',', '.'));
-
-		let oldBeatmap = bancho.lastUserMaps.get(message.user.id.toString());
-
-		if (!oldBeatmap) {
-			return message.user.sendMessage('Please /np a map first.');
-		}
-
-		let beatmap = await getOsuBeatmap({ beatmapId: oldBeatmap.beatmapId, modBits: oldBeatmap.modBits });
-
-		let accPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, acc, 0, beatmap.maxCombo, client);
-
-		let mods = getMods(beatmap.mods);
-
-		if (!mods[0]) {
-			mods = ['NM'];
-		}
-
-		mods = mods.join('');
-
-		message.user.sendMessage(`[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]] [${mods}] | ${acc}%: ${Math.round(accPP)}pp`);
 	}
 };
 
