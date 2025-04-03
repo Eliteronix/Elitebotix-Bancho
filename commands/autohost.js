@@ -1,4 +1,4 @@
-const autohost = require('./matches/autohost.js');
+const autohost = require('../matches/autohost.js');
 
 module.exports = {
 	name: 'autohost',

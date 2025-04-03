@@ -1,4 +1,4 @@
-const { DBElitebotixProcessQueue } = require('./dbObjects');
+const { DBElitebotixProcessQueue } = require('../dbObjects');
 
 module.exports = {
 	name: 'leave',

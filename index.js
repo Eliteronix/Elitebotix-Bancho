@@ -11,9 +11,7 @@ const Banchojs = require('bancho.js');
 // eslint-disable-next-line no-undef
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1 });
 
-if (process.env.SERVER === 'Live') {
-	bancho.connect();
-}
+bancho.connect();
 
 bancho.lastUserMaps = {};
 bancho.autoHosts = [];

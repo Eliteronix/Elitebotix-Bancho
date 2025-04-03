@@ -1,4 +1,4 @@
-const { DBElitebotixDiscordUsers } = require('./dbObjects');
+const { DBElitebotixDiscordUsers } = require('../dbObjects');
 
 module.exports = {
 	name: 'unlink',

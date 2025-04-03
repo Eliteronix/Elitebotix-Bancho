@@ -1,6 +1,7 @@
 const { getUserDuelStarRating, getValidTournamentBeatmap } = require('./utils');
 const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers } = require('./dbObjects');
 const { getOsuPP, getOsuBeatmap, getMods } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const fs = require('fs');
 
 // Replace utils and client dependencies
 
