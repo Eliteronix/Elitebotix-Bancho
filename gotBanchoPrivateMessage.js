@@ -6,7 +6,6 @@ const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers } = require('./dbObje
 module.exports = async function (bancho, message) {
 
 	if (!bancho.commands) {
-
 		//get all command files
 		const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 

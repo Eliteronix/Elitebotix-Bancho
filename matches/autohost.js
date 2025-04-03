@@ -1,8 +1,7 @@
-const { populateMsgFromInteraction, logMatchCreation, getOsuUserServerMode, logDatabaseQueries, getNextMap, addMatchMessage } = require('../utils');
-const { PermissionsBitField, SlashCommandBuilder } = require('discord.js');
-const { DBElitebotixDiscordUsers } = require('../dbObjects');
+const { logMatchCreation, addMatchMessage } = require('../utils');
+const { DBElitebotixDiscordUsers, DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue } = require('../dbObjects');
 const { Op } = require('sequelize');
-const { showUnknownInteractionError } = require('../config.json');
+const { getNextMap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 
 module.exports = {
 	async execute(bancho, osuUserId, settings) {
@@ -118,26 +117,19 @@ module.exports = {
 			}
 		}
 
-		return;
+		let matchMessages = [];
 
 		channel.on('message', async (msg) => {
-			process.send(`osuuser ${msg.user.id}}`);
-
 			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 		});
 
 		const lobby = channel.lobby;
-		logMatchCreation(additionalObjects[0], lobby.name, lobby.id);
+		logMatchCreation(lobby.name, lobby.id);
 
-		let matchMessages = [];
 		await channel.sendMessage(`!mp password ${password}`);
 		await channel.sendMessage('!mp addref Eliteronix');
 		await channel.sendMessage(`!mp set 0 ${winCondition}`);
-		await channel.sendMessage(`!mp invite #${commandUser.osuUserId}`);
-
-		if (interaction) {
-			await interaction.editReply('The lobby has been created. You have been sent an invite ingame.');
-		}
+		await channel.sendMessage(`!mp invite #${discordUser.osuUserId}`);
 
 		let poolIterator = 0;
 		let currentPotentialMods = [];
@@ -150,11 +142,10 @@ module.exports = {
 		let threeMonthsAgo = new Date();
 		threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-		logDatabaseQueries(4, 'commands/osu-autohost.js DBOsuMultiGameScores');
-		const player1Scores = await DBOsuMultiGameScores.findAll({
+		const player1Scores = await DBElitebotixOsuMultiGameScores.findAll({
 			attributes: ['beatmapId'],
 			where: {
-				osuUserId: commandUser.osuUserId,
+				osuUserId: discordUser.osuUserId,
 				mode: 0,
 				gameStartDate: {
 					[Op.gte]: threeMonthsAgo,
@@ -168,13 +159,12 @@ module.exports = {
 
 		let date = new Date();
 		date.setUTCMinutes(date.getUTCMinutes() + 5);
-		logDatabaseQueries(4, 'commands/name-sync.js DBProcessQueue');
-		await DBProcessQueue.create({ guildId: 'None', task: 'importMatch', additions: `${lobby.id};0;${new Date().getTime()};${lobby.name}`, priority: 1, date: date });
+		await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'importMatch', additions: `${lobby.id};0;${new Date().getTime()};${lobby.name}`, priority: 1, date: date });
 
 		channel.on('message', async (msg) => {
 			if (msg.user.ircUsername === 'BanchoBot' && msg.message === 'Countdown finished') {
 				await channel.sendMessage('!mp start 10');
-			} else if (msg.user._id == commandUser.osuUserId) {
+			} else if (msg.user._id == discordUser.osuUserId) {
 				let modUpdate = false;
 				//If it is the creator
 				if (msg.message === '!commands') {
@@ -438,9 +428,7 @@ module.exports = {
 		});
 
 		lobby.on('playerJoined', async (obj) => {
-			process.send(`osuuser ${obj.player.user.id}}`);
-
-			if (commandUser.osuUserId === obj.player.user.id.toString()) {
+			if (discordUser.osuUserId === obj.player.user.id.toString()) {
 				await channel.sendMessage('!commands - Sends the list of commands.');
 				await channel.sendMessage('!abort - Aborts the currently playing map.');
 				await channel.sendMessage('!condition - Allows you to change the win condition. (Score/Scorev2/Accuracy)');
@@ -530,10 +518,6 @@ module.exports = {
 		});
 
 		lobby.on('matchFinished', async (results) => {
-			for (let i = 0; i < results.length; i++) {
-				process.send(`osuuser ${results[i].player.user.id}}`);
-			}
-
 			let nextModPool = getNextModPool(true);
 
 			let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
