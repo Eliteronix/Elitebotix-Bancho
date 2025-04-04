@@ -10,7 +10,7 @@ module.exports = {
 
 		let acc = parseFloat(args[0].replace(',', '.'));
 
-		let oldBeatmap = bancho.lastUserMaps.get(message.user.id.toString());
+		let oldBeatmap = bancho.lastUserMaps[message.user.id.toString()];
 
 		if (!oldBeatmap) {
 			return message.user.sendMessage('Please /np a map first.');

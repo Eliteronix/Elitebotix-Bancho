@@ -22,6 +22,10 @@ bancho.on('PM', async (message) => {
 	gotBanchoPrivateMessage(bancho, message);
 });
 
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('Unhandled rejection, index.js:', reason);
+});
+
 function returnBoolean(value) {
 	if (value === 'false') return false;
 	if (value === 'true') return true;

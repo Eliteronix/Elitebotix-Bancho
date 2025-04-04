@@ -16,7 +16,6 @@ module.exports = {
 		});
 
 		if (!discordUser) {
-			console.log('no connected and verified account found', message.user, discordUser);
 			return message.user.sendMessage(`Please connect and verify your account with the bot on discord as a backup by using: '/osu-link connect username:${message.user.username}' [https://discord.gg/Asz5Gfe Discord]`);
 		}
 

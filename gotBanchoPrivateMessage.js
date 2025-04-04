@@ -7,7 +7,7 @@ module.exports = async function (bancho, message) {
 
 	await message.user.fetchFromAPI();
 
-	if (message.user.username === process.env.OSUNAME) return;
+	// if (message.user.username === process.env.OSUNAME) return;
 
 	if (!bancho.commands) {
 		//get all command files
@@ -41,6 +41,7 @@ module.exports = async function (bancho, message) {
 		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName));
 
 	if (!command) {
+		if (message.user.username === process.env.OSUNAME) return;
 		return message.user.sendMessage('Command not found. Use !help to get a list of all commands.');
 	}
 
