@@ -23,6 +23,8 @@ module.exports = {
 
 		await trySendMessage(banchoUser, createMessage);
 
+		console.log(`Creating lobby for ${osuUserId} with password ${password}...`);
+
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			where: {
 				osuUserId: osuUserId,
@@ -513,7 +515,7 @@ module.exports = {
 			}
 		});
 
-		lobby.on('allPlayersReady', async () => {
+		lobby.on('allPlayersReady', async () => { // Emits when no one has the map
 			await trySendMessage(channel, '!mp start 5');
 		});
 
