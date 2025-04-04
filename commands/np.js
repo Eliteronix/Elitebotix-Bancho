@@ -44,8 +44,6 @@ module.exports = {
 
 		let beatmap = await getOsuBeatmap({ beatmapId: beatmapId, modBits: modBits });
 
-		console.log(`Got beatmap ${beatmap.beatmapId} from ${message.user.username} (${message.user.id})`);
-
 		bancho.lastUserMaps[message.user.id.toString()] = { beatmapId: beatmapId, modBits: modBits };
 
 		let firstPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 95.00, 0, beatmap.maxCombo);
