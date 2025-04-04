@@ -36,5 +36,29 @@ module.exports = {
 			date: new Date(),
 			priority: 0
 		});
+	},
+	async trySendMessage(destination, message) {
+		try {
+			await destination.sendMessage(message);
+		} catch (e) {
+			if (e.message === 'Currently disconnected!') {
+				console.log('Currently disconnected! Trying to reconnect...', message);
+				try {
+					console.log('Connecting trySendMessage');
+					await destination.banchojs.connect();
+				} catch (e) {
+					if (e.message !== 'Already connected/connecting') {
+						console.error('Error reconnecting: ', e);
+					}
+				}
+
+				await new Promise((resolve) => setTimeout(resolve, 5000));
+
+				console.log('Trying to send message again...', message);
+				await module.exports.trySendMessage(destination, message);
+			} else {
+				console.error('Error sending message to destination: ', e);
+			}
+		}
 	}
 };

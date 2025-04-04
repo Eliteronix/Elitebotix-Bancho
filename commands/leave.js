@@ -1,5 +1,5 @@
 const { DBElitebotixProcessQueue } = require('../dbObjects');
-const { updateQueueChannels } = require('../utils');
+const { updateQueueChannels, trySendMessage } = require('../utils');
 
 module.exports = {
 	name: 'leave',
@@ -21,10 +21,10 @@ module.exports = {
 
 				await updateQueueChannels();
 
-				return message.user.sendMessage('You have been removed from the queue for a 1v1 duel.');
+				return await trySendMessage(message.user, 'You have been removed from the queue for a 1v1 duel.');
 			}
 		}
 
-		return message.user.sendMessage('You are not in the queue for a 1v1 duel.');
+		return await trySendMessage(message.user, 'You are not in the queue for a 1v1 duel.');
 	},
 };

@@ -1,3 +1,5 @@
+const { trySendMessage } = require('../utils');
+
 module.exports = {
 	name: 'lastrequests',
 	help: '!lastrequests - Shows the last 5 twitch requests again',
@@ -11,7 +13,7 @@ module.exports = {
 		}
 
 		if (userRequests.length === 0) {
-			return message.user.sendMessage('You have no requests since the last Elitebotix restart.');
+			return await trySendMessage(message.user, 'You have no requests since the last Elitebotix restart.');
 		}
 
 		//Remove everything but the last 5 requests
@@ -20,11 +22,11 @@ module.exports = {
 		}
 
 		//Resend the messages
-		await message.user.sendMessage(`Here are your last ${userRequests.length} twitch requests:`);
+		await trySendMessage(message.user, `Here are your last ${userRequests.length} twitch requests:`);
 		for (let i = 0; i < userRequests.length; i++) {
-			await message.user.sendMessage(userRequests[i].main);
+			await trySendMessage(message.user, userRequests[i].main);
 			if (userRequests[i].comment) {
-				await message.user.sendMessage(userRequests[i].comment);
+				await trySendMessage(message.user, userRequests[i].comment);
 			}
 		}
 	},

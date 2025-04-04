@@ -1,6 +1,6 @@
 const { DBElitebotixDiscordUsers, DBElitebotixProcessQueue } = require('../dbObjects');
 const { getUserDuelStarRating } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
-const { updateQueueChannels } = require('../utils');
+const { updateQueueChannels, trySendMessage } = require('../utils');
 
 module.exports = {
 	name: 'play',
@@ -16,7 +16,7 @@ module.exports = {
 		});
 
 		if (!discordUser) {
-			return message.user.sendMessage(`Please connect and verify your account with the bot on discord as a backup by using: '/osu-link connect username:${message.user.username}' [https://discord.gg/Asz5Gfe Discord]`);
+			return await trySendMessage(message.user, `Please connect and verify your account with the bot on discord as a backup by using: '/osu-link connect username:${message.user.username}' [https://discord.gg/Asz5Gfe Discord]`);
 		}
 
 		let existingQueueTasks = await DBElitebotixProcessQueue.findAll({
@@ -35,13 +35,13 @@ module.exports = {
 					return Math.abs(ownRating - parseFloat(task.additions.split(';')[1])) < 1;
 				});
 
-				return message.user.sendMessage(`You are already in the queue for a 1v1 duel. There are ${existingQueueTasks.length - 1} opponents in the queue (${tasksInReach.length - 1} in reach).`);
+				return await trySendMessage(message.user, `You are already in the queue for a 1v1 duel. There are ${existingQueueTasks.length - 1} opponents in the queue (${tasksInReach.length - 1} in reach).`);
 			}
 		}
 
 		let ownStarRating = 5;
 		try {
-			message.user.sendMessage('Processing duel rating...');
+			await trySendMessage(message.user, 'Processing duel rating...');
 			ownStarRating = await getUserDuelStarRating({ osuUserId: discordUser.osuUserId });
 
 			ownStarRating = ownStarRating.total;
@@ -68,7 +68,7 @@ module.exports = {
 					return Math.abs(ownRating - parseFloat(task.additions.split(';')[1])) < 1;
 				});
 
-				return message.user.sendMessage(`You are already in the queue for a 1v1 duel. There are ${existingQueueTasks.length - 1} opponents in the queue (${tasksInReach.length - 1} in reach).`);
+				return await trySendMessage(message.user, `You are already in the queue for a 1v1 duel. There are ${existingQueueTasks.length - 1} opponents in the queue (${tasksInReach.length - 1} in reach).`);
 			}
 		}
 
@@ -86,15 +86,7 @@ module.exports = {
 			return Math.abs(ownStarRating - parseFloat(task.additions.split(';')[1])) < 1;
 		});
 
-		try {
-			return await message.user.sendMessage(`You are now queued up for a 1v1 duel. There are ${existingQueueTasks.length} opponents in the queue (${tasksInReach.length} in reach).`);
-		} catch (e) {
-			if (e.message === 'Currently disconnected!') {
-				await bancho.connect();
-				return await message.user.sendMessage(`You are now queued up for a 1v1 duel. There are ${existingQueueTasks.length} opponents in the queue (${tasksInReach.length} in reach).`);
-			} else {
-				return console.error('gotBanchoPrivateMessage.js | queue1v1', e);
-			}
-		}
+		return await trySendMessage(message.user, `You are now queued up for a 1v1 duel. There are ${existingQueueTasks.length} opponents in the queue (${tasksInReach.length} in reach).`);
+
 	},
 };

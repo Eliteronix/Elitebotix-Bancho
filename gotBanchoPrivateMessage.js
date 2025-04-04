@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { trySendMessage } = require('./utils');
 
 // Replace utils and client dependencies
 
@@ -7,7 +8,7 @@ module.exports = async function (bancho, message) {
 
 	await message.user.fetchFromAPI();
 
-	// if (message.user.username === process.env.OSUNAME) return;
+	if (message.user.username === process.env.OSUNAME) return;
 
 	if (!bancho.commands) {
 		//get all command files
@@ -42,7 +43,7 @@ module.exports = async function (bancho, message) {
 
 	if (!command) {
 		if (message.user.username === process.env.OSUNAME) return;
-		return message.user.sendMessage('Command not found. Use !help to get a list of all commands.');
+		return await trySendMessage(message.user, 'Command not found. Use !help to get a list of all commands.');
 	}
 
 	command.execute(bancho, message, args);

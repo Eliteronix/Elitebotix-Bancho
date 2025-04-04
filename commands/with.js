@@ -1,4 +1,5 @@
 const { getOsuPP, getOsuBeatmap, getMods, getModBits } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const { trySendMessage } = require('../utils');
 
 module.exports = {
 	name: 'with',
@@ -9,7 +10,7 @@ module.exports = {
 		let oldBeatmap = bancho.lastUserMaps[message.user.id.toString()];
 
 		if (!oldBeatmap) {
-			return message.user.sendMessage('Please /np a map first.');
+			return await trySendMessage(message.user, 'Please /np a map first.');
 		}
 
 		let beatmap = await getOsuBeatmap({ beatmapId: oldBeatmap.beatmapId, modBits: modBits });
@@ -29,6 +30,6 @@ module.exports = {
 
 		mods = mods.join('');
 
-		message.user.sendMessage(`[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]] [${mods}] | 95%: ${Math.round(firstPP)}pp | 98%: ${Math.round(secondPP)}pp | 99%: ${Math.round(thirdPP)}pp | 100%: ${Math.round(fourthPP)}pp`);
+		await trySendMessage(message.user, `[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]] [${mods}] | 95%: ${Math.round(firstPP)}pp | 98%: ${Math.round(secondPP)}pp | 99%: ${Math.round(thirdPP)}pp | 100%: ${Math.round(fourthPP)}pp`);
 	},
 };

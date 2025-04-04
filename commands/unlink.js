@@ -1,4 +1,5 @@
 const { DBElitebotixDiscordUsers } = require('../dbObjects');
+const { trySendMessage } = require('../utils');
 
 module.exports = {
 	name: 'unlink',
@@ -16,9 +17,9 @@ module.exports = {
 			discordUser.osuVerified = false;
 			await discordUser.save();
 
-			return await message.user.sendMessage('Your discord account has been unlinked from your osu! account.');
+			return await trySendMessage(message.user, 'Your discord account has been unlinked from your osu! account.');
 		} else {
-			await message.user.sendMessage('You have no discord account linked to your osu! account.');
+			await trySendMessage(message.user, 'You have no discord account linked to your osu! account.');
 		}
 	},
 };

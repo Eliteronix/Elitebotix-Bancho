@@ -1,4 +1,4 @@
-const { logMatchCreation, addMatchMessage } = require('../utils');
+const { logMatchCreation, addMatchMessage, trySendMessage } = require('../utils');
 const { DBElitebotixDiscordUsers, DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue } = require('../dbObjects');
 const { Op } = require('sequelize');
 const { getNextMap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
@@ -21,7 +21,7 @@ module.exports = {
 
 		let banchoUser = bancho.getUser(osuUserId.toString());
 
-		await banchoUser.sendMessage(createMessage);
+		await trySendMessage(banchoUser, createMessage);
 
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			where: {
@@ -31,7 +31,7 @@ module.exports = {
 		});
 
 		if (!discordUser) {
-			return banchoUser.sendMessage('Please connect and verify your account with the bot on discord as a backup by using: /osu-link connect [https://discord.gg/Asz5Gfe Discord]');
+			return await trySendMessage(banchoUser, 'Please connect and verify your account with the bot on discord as a backup by using: /osu-link connect [https://discord.gg/Asz5Gfe Discord]');
 		}
 
 		//Fill in star ratings if needed
@@ -101,7 +101,7 @@ module.exports = {
 				try {
 					await bancho.connect();
 				} catch (error) {
-					if (!error.message === 'Already connected/connecting') {
+					if (error.message !== 'Already connected/connecting') {
 						throw (error);
 					}
 				}
@@ -110,7 +110,7 @@ module.exports = {
 				break;
 			} catch (error) {
 				if (i === 4) {
-					return banchoUser.sendMessage('I am having issues creating the lobby and the match has been aborted. Please try again later.');
+					return await trySendMessage(banchoUser, 'I am having issues creating the lobby and the match has been aborted. Please try again later.');
 				} else {
 					await new Promise(resolve => setTimeout(resolve, 10000));
 				}
@@ -126,10 +126,10 @@ module.exports = {
 		const lobby = channel.lobby;
 		logMatchCreation(lobby.name, lobby.id);
 
-		await channel.sendMessage(`!mp password ${password}`);
-		await channel.sendMessage('!mp addref Eliteronix');
-		await channel.sendMessage(`!mp set 0 ${winCondition}`);
-		await channel.sendMessage(`!mp invite #${discordUser.osuUserId}`);
+		await trySendMessage(channel, `!mp password ${password}`);
+		await trySendMessage(channel, '!mp addref Eliteronix');
+		await trySendMessage(channel, `!mp set 0 ${winCondition}`);
+		await trySendMessage(channel, `!mp invite #${discordUser.osuUserId}`);
 
 		let poolIterator = 0;
 		let currentPotentialMods = [];
@@ -163,26 +163,26 @@ module.exports = {
 
 		channel.on('message', async (msg) => {
 			if (msg.user.ircUsername === 'BanchoBot' && msg.message === 'Countdown finished') {
-				await channel.sendMessage('!mp start 10');
+				await trySendMessage(channel, '!mp start 10');
 			} else if (msg.user._id == discordUser.osuUserId) {
 				let modUpdate = false;
 				//If it is the creator
 				if (msg.message === '!commands') {
-					await channel.sendMessage('!abort - Aborts the currently playing map.');
-					await channel.sendMessage('!condition - Allows you to change the win condition. (Score/Scorev2/Accuracy)');
-					await channel.sendMessage('!password - Allows you to change the password.');
-					await channel.sendMessage('!skip - Skips the currently selected map.');
-					await channel.sendMessage('!timeout - Increases the timer to 5 minutes.');
-					await channel.sendMessage('!mods - Allows you to change the played mods. (Ex: "NM,HR,DT")');
-					await channel.sendMessage('!sr - Allows you to change the SR of all mods (Ex: "!sr 5.6")');
-					await channel.sendMessage('!nm - Allows you to change the NM SR (Ex: "!nm 5.6")');
-					await channel.sendMessage('!hd - Allows you to change the HD SR (Ex: "!hd 5.6")');
-					await channel.sendMessage('!hr - Allows you to change the HR SR (Ex: "!hr 5.6")');
-					await channel.sendMessage('!dt - Allows you to change the DT SR (Ex: "!dt 5.6")');
-					await channel.sendMessage('!fm - Allows you to change the FM SR (Ex: "!fm 5.6")');
+					await trySendMessage(channel, '!abort - Aborts the currently playing map.');
+					await trySendMessage(channel, '!condition - Allows you to change the win condition. (Score/Scorev2/Accuracy)');
+					await trySendMessage(channel, '!password - Allows you to change the password.');
+					await trySendMessage(channel, '!skip - Skips the currently selected map.');
+					await trySendMessage(channel, '!timeout - Increases the timer to 5 minutes.');
+					await trySendMessage(channel, '!mods - Allows you to change the played mods. (Ex: "NM,HR,DT")');
+					await trySendMessage(channel, '!sr - Allows you to change the SR of all mods (Ex: "!sr 5.6")');
+					await trySendMessage(channel, '!nm - Allows you to change the NM SR (Ex: "!nm 5.6")');
+					await trySendMessage(channel, '!hd - Allows you to change the HD SR (Ex: "!hd 5.6")');
+					await trySendMessage(channel, '!hr - Allows you to change the HR SR (Ex: "!hr 5.6")');
+					await trySendMessage(channel, '!dt - Allows you to change the DT SR (Ex: "!dt 5.6")');
+					await trySendMessage(channel, '!fm - Allows you to change the FM SR (Ex: "!fm 5.6")');
 				} else if (msg.message === '!skip') {
-					await channel.sendMessage('!mp aborttimer');
-					await channel.sendMessage('Looking for new map...');
+					await trySendMessage(channel, '!mp aborttimer');
+					await trySendMessage(channel, 'Looking for new map...');
 					let nextModPool = getNextModPool(true);
 
 					let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
@@ -192,8 +192,8 @@ module.exports = {
 							beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
 						}
 
-						await channel.sendMessage('!mp abort');
-						await channel.sendMessage(`!mp map ${beatmap.beatmapId}`);
+						await trySendMessage(channel, '!mp abort');
+						await trySendMessage(channel, `!mp map ${beatmap.beatmapId}`);
 						await new Promise(resolve => setTimeout(resolve, 5000));
 						await lobby.updateSettings();
 						tries++;
@@ -212,9 +212,9 @@ module.exports = {
 							|| nextModPool === 'DT' && lobby.mods && lobby.mods[1].shortMod !== 'dt'
 						) {
 							if (nextModPool === 'FM') {
-								await channel.sendMessage('!mp mods FreeMod');
+								await trySendMessage(channel, '!mp mods FreeMod');
 							} else {
-								await channel.sendMessage(`!mp mods ${nextModPool} NF`);
+								await trySendMessage(channel, `!mp mods ${nextModPool} NF`);
 							}
 
 							await new Promise(resolve => setTimeout(resolve, 5000));
@@ -233,22 +233,22 @@ module.exports = {
 							|| nextModPool === 'DT' && lobby.mods && lobby.mods[0].shortMod !== 'dt'
 						) {
 							if (nextModPool === 'FM') {
-								await channel.sendMessage('!mp mods FreeMod');
+								await trySendMessage(channel, '!mp mods FreeMod');
 							} else {
-								await channel.sendMessage(`!mp mods ${nextModPool}`);
+								await trySendMessage(channel, `!mp mods ${nextModPool}`);
 							}
 
 							await new Promise(resolve => setTimeout(resolve, 5000));
 						}
 					}
 
-					await channel.sendMessage('!mp timer 120');
+					await trySendMessage(channel, '!mp timer 120');
 				} else if (msg.message === '!abort') {
-					await channel.sendMessage('!mp abort');
+					await trySendMessage(channel, '!mp abort');
 					await new Promise(resolve => setTimeout(resolve, 5000));
-					await channel.sendMessage('!mp timer 120');
+					await trySendMessage(channel, '!mp timer 120');
 				} else if (msg.message === '!timeout') {
-					await channel.sendMessage('!mp timer 300');
+					await trySendMessage(channel, '!mp timer 300');
 				} else if (msg.message.toLowerCase().startsWith('!mods')) {
 					let matchName = 'ETX Autohost';
 
@@ -299,16 +299,16 @@ module.exports = {
 						getNextModPool();
 					}
 
-					await channel.sendMessage(`!mp name ${matchName}`);
-					await channel.sendMessage('Adapted the played mods. The changes will take place next map. Use !skip to update now.');
+					await trySendMessage(channel, `!mp name ${matchName}`);
+					await trySendMessage(channel, 'Adapted the played mods. The changes will take place next map. Use !skip to update now.');
 				} else if (msg.message.toLowerCase().startsWith('!sr')) {
 					let args = msg.message.slice(3).trim().split(/ +/);
 					if (!args.length) {
-						await channel.sendMessage('You didn\'t specify a star rating');
+						await trySendMessage(channel, 'You didn\'t specify a star rating');
 					} else if (isNaN(parseFloat(args[0]))) {
-						await channel.sendMessage(`"${args[0]}" is not a valid star rating`);
+						await trySendMessage(channel, `"${args[0]}" is not a valid star rating`);
 					} else if (parseFloat(args[0]) > 10 || parseFloat(args[0]) < 3.5) {
-						await channel.sendMessage('The star rating should not be higher than 10 or lower than 3.5');
+						await trySendMessage(channel, 'The star rating should not be higher than 10 or lower than 3.5');
 					} else {
 						nmStarRating = parseFloat(args[0]);
 						hdStarRating = parseFloat(args[0]);
@@ -320,11 +320,11 @@ module.exports = {
 				} else if (msg.message.toLowerCase().startsWith('!nm')) {
 					let args = msg.message.slice(3).trim().split(/ +/);
 					if (!args.length) {
-						await channel.sendMessage('You didn\'t specify a star rating');
+						await trySendMessage(channel, 'You didn\'t specify a star rating');
 					} else if (isNaN(parseFloat(args[0]))) {
-						await channel.sendMessage(`"${args[0]}" is not a valid star rating`);
+						await trySendMessage(channel, `"${args[0]}" is not a valid star rating`);
 					} else if (parseFloat(args[0]) > 10 || parseFloat(args[0]) < 3.5) {
-						await channel.sendMessage('The star rating should not be higher than 10 or lower than 3.5');
+						await trySendMessage(channel, 'The star rating should not be higher than 10 or lower than 3.5');
 					} else {
 						nmStarRating = parseFloat(args[0]);
 						modUpdate = true;
@@ -332,11 +332,11 @@ module.exports = {
 				} else if (msg.message.toLowerCase().startsWith('!hd')) {
 					let args = msg.message.slice(3).trim().split(/ +/);
 					if (!args.length) {
-						await channel.sendMessage('You didn\'t specify a star rating');
+						await trySendMessage(channel, 'You didn\'t specify a star rating');
 					} else if (isNaN(parseFloat(args[0]))) {
-						await channel.sendMessage(`"${args[0]}" is not a valid star rating`);
+						await trySendMessage(channel, `"${args[0]}" is not a valid star rating`);
 					} else if (parseFloat(args[0]) > 10 || parseFloat(args[0]) < 3.5) {
-						await channel.sendMessage('The star rating should not be higher than 10 or lower than 3.5');
+						await trySendMessage(channel, 'The star rating should not be higher than 10 or lower than 3.5');
 					} else {
 						hdStarRating = parseFloat(args[0]);
 						modUpdate = true;
@@ -344,11 +344,11 @@ module.exports = {
 				} else if (msg.message.toLowerCase().startsWith('!hr')) {
 					let args = msg.message.slice(3).trim().split(/ +/);
 					if (!args.length) {
-						await channel.sendMessage('You didn\'t specify a star rating');
+						await trySendMessage(channel, 'You didn\'t specify a star rating');
 					} else if (isNaN(parseFloat(args[0]))) {
-						await channel.sendMessage(`"${args[0]}" is not a valid star rating`);
+						await trySendMessage(channel, `"${args[0]}" is not a valid star rating`);
 					} else if (parseFloat(args[0]) > 10 || parseFloat(args[0]) < 3.5) {
-						await channel.sendMessage('The star rating should not be higher than 10 or lower than 3.5');
+						await trySendMessage(channel, 'The star rating should not be higher than 10 or lower than 3.5');
 					} else {
 						hrStarRating = parseFloat(args[0]);
 						modUpdate = true;
@@ -356,11 +356,11 @@ module.exports = {
 				} else if (msg.message.toLowerCase().startsWith('!dt')) {
 					let args = msg.message.slice(3).trim().split(/ +/);
 					if (!args.length) {
-						await channel.sendMessage('You didn\'t specify a star rating');
+						await trySendMessage(channel, 'You didn\'t specify a star rating');
 					} else if (isNaN(parseFloat(args[0]))) {
-						await channel.sendMessage(`"${args[0]}" is not a valid star rating`);
+						await trySendMessage(channel, `"${args[0]}" is not a valid star rating`);
 					} else if (parseFloat(args[0]) > 10 || parseFloat(args[0]) < 3.5) {
-						await channel.sendMessage('The star rating should not be higher than 10 or lower than 3.5');
+						await trySendMessage(channel, 'The star rating should not be higher than 10 or lower than 3.5');
 					} else {
 						dtStarRating = parseFloat(args[0]);
 						modUpdate = true;
@@ -368,11 +368,11 @@ module.exports = {
 				} else if (msg.message.toLowerCase().startsWith('!fm')) {
 					let args = msg.message.slice(3).trim().split(/ +/);
 					if (!args.length) {
-						await channel.sendMessage('You didn\'t specify a star rating');
+						await trySendMessage(channel, 'You didn\'t specify a star rating');
 					} else if (isNaN(parseFloat(args[0]))) {
-						await channel.sendMessage(`"${args[0]}" is not a valid star rating`);
+						await trySendMessage(channel, `"${args[0]}" is not a valid star rating`);
 					} else if (parseFloat(args[0]) > 10 || parseFloat(args[0]) < 3.5) {
-						await channel.sendMessage('The star rating should not be higher than 10 or lower than 3.5');
+						await trySendMessage(channel, 'The star rating should not be higher than 10 or lower than 3.5');
 					} else {
 						fmStarRating = parseFloat(args[0]);
 						modUpdate = true;
@@ -382,10 +382,10 @@ module.exports = {
 
 					if (args[0]) {
 						lobby.setPassword(args[0]);
-						await channel.sendMessage(`Updated the password to ${args[0]}`);
+						await trySendMessage(channel, `Updated the password to ${args[0]}`);
 					} else {
-						await channel.sendMessage('!mp password');
-						await channel.sendMessage('Removed the password');
+						await trySendMessage(channel, '!mp password');
+						await trySendMessage(channel, 'Removed the password');
 					}
 				} else if (msg.message.toLowerCase().startsWith('!condition')) {
 					winCondition = '0';
@@ -396,8 +396,8 @@ module.exports = {
 						winCondition = '1';
 					}
 
-					await channel.sendMessage(`!mp set 0 ${winCondition}`);
-					await channel.sendMessage('The condition has been adapted.');
+					await trySendMessage(channel, `!mp set 0 ${winCondition}`);
+					await trySendMessage(channel, 'The condition has been adapted.');
 				}
 
 				if (modUpdate) {
@@ -421,27 +421,27 @@ module.exports = {
 						matchName = matchName + ` | ${fmStarRating.toFixed(1)} FM`;
 					}
 
-					await channel.sendMessage(`!mp name ${matchName}`);
-					await channel.sendMessage('Adapted the star rating. The changes will take place next map. Use !skip to update now.');
+					await trySendMessage(channel, `!mp name ${matchName}`);
+					await trySendMessage(channel, 'Adapted the star rating. The changes will take place next map. Use !skip to update now.');
 				}
 			}
 		});
 
 		lobby.on('playerJoined', async (obj) => {
 			if (discordUser.osuUserId === obj.player.user.id.toString()) {
-				await channel.sendMessage('!commands - Sends the list of commands.');
-				await channel.sendMessage('!abort - Aborts the currently playing map.');
-				await channel.sendMessage('!condition - Allows you to change the win condition. (Score/Scorev2/Accuracy)');
-				await channel.sendMessage('!password - Allows you to change the password.');
-				await channel.sendMessage('!skip - Skips the currently selected map.');
-				await channel.sendMessage('!timeout - Increases the timer to 5 minutes.');
-				await channel.sendMessage('!mods - Allows you to change the played mods. (Ex: "NM,HR,DT")');
-				await channel.sendMessage('!sr - Allows you to change the SR of all mods (Ex: "!sr 5.6")');
-				await channel.sendMessage('!nm - Allows you to change the NM SR (Ex: "!nm 5.6")');
-				await channel.sendMessage('!hd - Allows you to change the HD SR (Ex: "!hd 5.6")');
-				await channel.sendMessage('!hr - Allows you to change the HR SR (Ex: "!hr 5.6")');
-				await channel.sendMessage('!dt - Allows you to change the DT SR (Ex: "!dt 5.6")');
-				await channel.sendMessage('!fm - Allows you to change the FM SR (Ex: "!fm 5.6")');
+				await trySendMessage(channel, '!commands - Sends the list of commands.');
+				await trySendMessage(channel, '!abort - Aborts the currently playing map.');
+				await trySendMessage(channel, '!condition - Allows you to change the win condition. (Score/Scorev2/Accuracy)');
+				await trySendMessage(channel, '!password - Allows you to change the password.');
+				await trySendMessage(channel, '!skip - Skips the currently selected map.');
+				await trySendMessage(channel, '!timeout - Increases the timer to 5 minutes.');
+				await trySendMessage(channel, '!mods - Allows you to change the played mods. (Ex: "NM,HR,DT")');
+				await trySendMessage(channel, '!sr - Allows you to change the SR of all mods (Ex: "!sr 5.6")');
+				await trySendMessage(channel, '!nm - Allows you to change the NM SR (Ex: "!nm 5.6")');
+				await trySendMessage(channel, '!hd - Allows you to change the HD SR (Ex: "!hd 5.6")');
+				await trySendMessage(channel, '!hr - Allows you to change the HR SR (Ex: "!hr 5.6")');
+				await trySendMessage(channel, '!dt - Allows you to change the DT SR (Ex: "!dt 5.6")');
+				await trySendMessage(channel, '!fm - Allows you to change the FM SR (Ex: "!fm 5.6")');
 				let nextModPool = getNextModPool(true);
 
 				let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
@@ -451,8 +451,8 @@ module.exports = {
 						beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
 					}
 
-					await channel.sendMessage('!mp abort');
-					await channel.sendMessage(`!mp map ${beatmap.beatmapId}`);
+					await trySendMessage(channel, '!mp abort');
+					await trySendMessage(channel, `!mp map ${beatmap.beatmapId}`);
 					await new Promise(resolve => setTimeout(resolve, 5000));
 					await lobby.updateSettings();
 					tries++;
@@ -471,9 +471,9 @@ module.exports = {
 						|| nextModPool === 'DT' && lobby.mods && lobby.mods[1].shortMod !== 'dt'
 					) {
 						if (nextModPool === 'FM') {
-							await channel.sendMessage('!mp mods FreeMod');
+							await trySendMessage(channel, '!mp mods FreeMod');
 						} else {
-							await channel.sendMessage(`!mp mods ${nextModPool} NF`);
+							await trySendMessage(channel, `!mp mods ${nextModPool} NF`);
 						}
 
 						await new Promise(resolve => setTimeout(resolve, 5000));
@@ -492,16 +492,16 @@ module.exports = {
 						|| nextModPool === 'DT' && lobby.mods && lobby.mods[0].shortMod !== 'dt'
 					) {
 						if (nextModPool === 'FM') {
-							await channel.sendMessage('!mp mods FreeMod');
+							await trySendMessage(channel, '!mp mods FreeMod');
 						} else {
-							await channel.sendMessage(`!mp mods ${nextModPool}`);
+							await trySendMessage(channel, `!mp mods ${nextModPool}`);
 						}
 
 						await new Promise(resolve => setTimeout(resolve, 5000));
 					}
 				}
 
-				await channel.sendMessage('!mp timer 120');
+				await trySendMessage(channel, '!mp timer 120');
 			}
 		});
 
@@ -514,7 +514,7 @@ module.exports = {
 		});
 
 		lobby.on('allPlayersReady', async () => {
-			await channel.sendMessage('!mp start 5');
+			await trySendMessage(channel, '!mp start 5');
 		});
 
 		lobby.on('matchFinished', async (results) => {
@@ -527,8 +527,8 @@ module.exports = {
 					beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
 				}
 
-				await channel.sendMessage('!mp abort');
-				await channel.sendMessage(`!mp map ${beatmap.beatmapId}`);
+				await trySendMessage(channel, '!mp abort');
+				await trySendMessage(channel, `!mp map ${beatmap.beatmapId}`);
 				await new Promise(resolve => setTimeout(resolve, 5000));
 				await lobby.updateSettings();
 				tries++;
@@ -547,9 +547,9 @@ module.exports = {
 					|| nextModPool === 'DT' && lobby.mods && lobby.mods[1].shortMod !== 'dt'
 				) {
 					if (nextModPool === 'FM') {
-						await channel.sendMessage('!mp mods FreeMod');
+						await trySendMessage(channel, '!mp mods FreeMod');
 					} else {
-						await channel.sendMessage(`!mp mods ${nextModPool} NF`);
+						await trySendMessage(channel, `!mp mods ${nextModPool} NF`);
 					}
 
 					await new Promise(resolve => setTimeout(resolve, 5000));
@@ -568,16 +568,16 @@ module.exports = {
 					|| nextModPool === 'DT' && lobby.mods && lobby.mods[0].shortMod !== 'dt'
 				) {
 					if (nextModPool === 'FM') {
-						await channel.sendMessage('!mp mods FreeMod');
+						await trySendMessage(channel, '!mp mods FreeMod');
 					} else {
-						await channel.sendMessage(`!mp mods ${nextModPool}`);
+						await trySendMessage(channel, `!mp mods ${nextModPool}`);
 					}
 
 					await new Promise(resolve => setTimeout(resolve, 5000));
 				}
 			}
 
-			await channel.sendMessage('!mp timer 120');
+			await trySendMessage(channel, '!mp timer 120');
 		});
 
 		function getNextModPool(remove) {

@@ -1,11 +1,12 @@
 const { getOsuPP, getOsuBeatmap, getMods } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const { trySendMessage } = require('../utils');
 
 module.exports = {
 	name: 'acc',
 	help: '!acc - Get the last map\'s pp value with the given accuracy',
 	async execute(bancho, message, args) {
 		if (!args[0]) {
-			return message.user.sendMessage('Please specify an accuracy.');
+			return await trySendMessage(message.user, 'Please specify an accuracy.');
 		}
 
 		let acc = parseFloat(args[0].replace(',', '.'));
@@ -13,7 +14,7 @@ module.exports = {
 		let oldBeatmap = bancho.lastUserMaps[message.user.id.toString()];
 
 		if (!oldBeatmap) {
-			return message.user.sendMessage('Please /np a map first.');
+			return await trySendMessage(message.user, 'Please /np a map first.');
 		}
 
 		let beatmap = await getOsuBeatmap({ beatmapId: oldBeatmap.beatmapId, modBits: oldBeatmap.modBits });
@@ -28,6 +29,6 @@ module.exports = {
 
 		mods = mods.join('');
 
-		message.user.sendMessage(`[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]] [${mods}] | ${acc}%: ${Math.round(accPP)}pp`);
+		await trySendMessage(message.user, `[https://osu.ppy.sh/b/${beatmap.beatmapId} ${beatmap.artist} - ${beatmap.title} [${beatmap.difficulty}]] [${mods}] | ${acc}%: ${Math.round(accPP)}pp`);
 	},
 };
