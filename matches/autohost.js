@@ -23,8 +23,6 @@ module.exports = {
 
 		await trySendMessage(banchoUser, createMessage);
 
-		console.log(`Creating lobby for ${osuUserId} with password ${password}...`);
-
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			where: {
 				osuUserId: osuUserId,
@@ -595,6 +593,12 @@ module.exports = {
 			poolIterator++;
 
 			return modPool;
+		}
+
+		while (true) {
+			await new Promise(resolve => setTimeout(resolve, 5000));
+			console.log(channel.listenerCount());
+			console.log(lobby.listenerCount());
 		}
 	},
 };
