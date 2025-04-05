@@ -68,5 +68,5 @@ module.exports = {
 				console.error('Error reconnecting: ', e);
 			}
 		}
-	}
+	},
 };
