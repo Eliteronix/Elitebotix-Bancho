@@ -8,6 +8,7 @@ require('dotenv').config();
 const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 
 const Banchojs = require('bancho.js');
+const { reconnectToBanchoAndChannels } = require('./utils');
 // eslint-disable-next-line no-undef
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1, botAccount: returnBoolean(process.env.BOTACCOUNT) });
 
@@ -20,6 +21,16 @@ bancho.autoHosts = [];
 //Listen to messages
 bancho.on('PM', async (message) => {
 	gotBanchoPrivateMessage(bancho, message);
+});
+
+bancho.on('error', async (error) => {
+	if (error.message === 'Timeout reached') {
+		console.error('Timeout reached, reconnecting...');
+	} else {
+		console.error('Bancho error index.js:', error);
+	}
+
+	await reconnectToBanchoAndChannels(bancho);
 });
 
 process.on('unhandledRejection', (reason, promise) => {

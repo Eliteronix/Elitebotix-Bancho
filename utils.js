@@ -43,14 +43,7 @@ module.exports = {
 		} catch (e) {
 			if (e.message === 'Currently disconnected!') {
 				console.log('Currently disconnected! Trying to reconnect...', message);
-				try {
-					console.log('Connecting trySendMessage');
-					await destination.banchojs.connect();
-				} catch (e) {
-					if (e.message !== 'Already connected/connecting') {
-						console.error('Error reconnecting: ', e);
-					}
-				}
+				await module.exports.reconnectToBanchoAndChannels(destination.banchojs);
 
 				await new Promise((resolve) => setTimeout(resolve, 5000));
 
@@ -58,6 +51,21 @@ module.exports = {
 				await module.exports.trySendMessage(destination, message);
 			} else {
 				console.error('Error sending message to destination: ', e);
+			}
+		}
+	},
+	async reconnectToBanchoAndChannels(bancho) {
+		try {
+			await bancho.connect();
+
+			for (const channel in bancho.channels) {
+				await bancho.channels[channel].join();
+				await module.exports.trySendMessage(bancho.channels[channel], 'Reconnected after unexpected disconnect. Sorry for the inconvenience!');
+				console.log('Joined channel', channel);
+			}
+		} catch (e) {
+			if (e.message !== 'Already connected/connecting') {
+				console.error('Error reconnecting: ', e);
 			}
 		}
 	}

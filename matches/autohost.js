@@ -513,8 +513,19 @@ module.exports = {
 			}
 		});
 
-		lobby.on('allPlayersReady', async () => { // Emits when no one has the map
-			await trySendMessage(channel, '!mp start 5');
+		lobby.on('allPlayersReady', async () => {
+			await lobby.updateSettings();
+
+			let playerHasNoMap = false;
+			for (let i = 0; i < 16; i++) {
+				let player = lobby.slots[i];
+				if (player && player.state === require('bancho.js').BanchoLobbyPlayerStates.NoMap) {
+					playerHasNoMap = true;
+				}
+			}
+			if (!playerHasNoMap) {
+				await trySendMessage(channel, '!mp start 5');
+			}
 		});
 
 		lobby.on('matchFinished', async (results) => {
@@ -593,12 +604,6 @@ module.exports = {
 			poolIterator++;
 
 			return modPool;
-		}
-
-		while (true) {
-			await new Promise(resolve => setTimeout(resolve, 5000));
-			console.log(channel.listenerCount());
-			console.log(lobby.listenerCount());
 		}
 	},
 };
