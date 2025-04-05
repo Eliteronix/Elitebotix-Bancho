@@ -8,12 +8,18 @@ require('dotenv').config();
 const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 
 const Banchojs = require('bancho.js');
-const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames } = require('./utils');
+const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames, executeNextProcessQueueTask } = require('./utils');
 
 // eslint-disable-next-line no-undef
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1, botAccount: returnBoolean(process.env.BOTACCOUNT) });
 
-bancho.connect().then(() => console.log('Connected to Bancho'));
+bancho.connect().then(() => {
+	console.log('Connected to Bancho');
+
+	setTimeout(() => {
+		executeProcessQueue(bancho);
+	}, 60000);
+});
 
 twitchConnect(bancho).then(twitch => {
 	bancho.twitchClient = twitch;
@@ -48,8 +54,25 @@ setTimeout(() => {
 	updateTwitchNames(bancho);
 }, 60000);
 
+// Set update to 1 after 23 hours to make it restart
+setTimeout(() => {
+	bancho.update = 1;
+}, 82800000);
+
 function returnBoolean(value) {
 	if (value === 'false') return false;
 	if (value === 'true') return true;
 	return value;
+}
+
+async function executeProcessQueue(client, bancho) {
+	try {
+		await executeNextProcessQueueTask(client, bancho);
+	} catch (e) {
+		console.error('index.js | executeNextProcessQueueTask' + e);
+	}
+
+	setTimeout(() => {
+		executeProcessQueue(client, bancho);
+	}, 1000);
 }

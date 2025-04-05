@@ -9,6 +9,7 @@ module.exports = {
 		".git",
 		"node_modules",
 		"matchLogs",
+		"databases",
 	],
 	env: {
 		PATH: `${process.env.HOME}/.bun/bin:${process.env.PATH}`, // Add "~/.bun/bin/bun" to PATH

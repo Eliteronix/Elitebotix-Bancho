@@ -1,4 +1,4 @@
-const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuMultiGameScores, DBElitebotixOsuMultiMatches } = require('./dbObjects');
+const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuMultiGameScores, DBElitebotixOsuMultiMatches, DBProcessQueue } = require('./dbObjects');
 const { Op } = require('sequelize');
 const tmi = require('tmi.js');
 const { getOsuBeatmap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
@@ -460,4 +460,38 @@ module.exports = {
 			}
 		}
 	},
+	executeNextProcessQueueTask: async function (client, bancho) {
+		let now = new Date();
+
+		let nextTasks = await DBProcessQueue.findAll({
+			where: {
+				beingExecuted: false,
+				date: {
+					[Op.lt]: now
+				}
+			},
+			order: [
+				['date', 'ASC'],
+			]
+		});
+
+		if (nextTasks.length) {
+			nextTasks[0].beingExecuted = true;
+			await nextTasks[0].save();
+
+			executeFoundTask(bancho, nextTasks[0]);
+		}
+	},
 };
+
+async function executeFoundTask(bancho, nextTask) {
+	try {
+		const task = require(`./processQueueTasks/${nextTask.task}.js`);
+
+		await task.execute(bancho, nextTask);
+	} catch (e) {
+		console.error('Error executing process queue task', e);
+		console.error('Process Queue entry:', nextTask);
+		nextTask.destroy();
+	}
+}
