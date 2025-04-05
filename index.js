@@ -8,14 +8,18 @@ require('dotenv').config();
 const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 
 const Banchojs = require('bancho.js');
-const { reconnectToBanchoAndChannels } = require('./utils');
+const { reconnectToBanchoAndChannels, twitchConnect } = require('./utils');
+
 // eslint-disable-next-line no-undef
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1, botAccount: returnBoolean(process.env.BOTACCOUNT) });
 
 bancho.connect().then(() => console.log('Connected to Bancho'));
 
+twitchConnect(bancho).then(twitch => {
+	bancho.twitchClient = twitch;
+});
+
 bancho.lastUserMaps = {};
-bancho.sentRequests = [];
 bancho.autoHosts = [];
 
 //Listen to messages
