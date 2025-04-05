@@ -8,7 +8,7 @@ require('dotenv').config();
 const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 
 const Banchojs = require('bancho.js');
-const { reconnectToBanchoAndChannels, twitchConnect } = require('./utils');
+const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames } = require('./utils');
 
 // eslint-disable-next-line no-undef
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1, botAccount: returnBoolean(process.env.BOTACCOUNT) });
@@ -40,6 +40,13 @@ bancho.on('error', async (error) => {
 process.on('unhandledRejection', (reason, promise) => {
 	console.error('Unhandled rejection, index.js:', reason);
 });
+
+setTimeout(() => {
+	// eslint-disable-next-line no-console
+	console.log('Starting regular tasks...');
+
+	updateTwitchNames(bancho);
+}, 60000);
 
 function returnBoolean(value) {
 	if (value === 'false') return false;

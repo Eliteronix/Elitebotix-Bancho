@@ -2,6 +2,7 @@ const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuMulti
 const { Op } = require('sequelize');
 const tmi = require('tmi.js');
 const { getOsuBeatmap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 module.exports = {
 	async addMatchMessage(matchId, array, user, message) {
@@ -417,5 +418,46 @@ module.exports = {
 		}
 
 		return twitchClient;
+	},
+	async updateTwitchNames(bancho) {
+		let twitchUsers = await DBElitebotixDiscordUsers.findAll({
+			attributes: ['id', 'twitchName', 'twitchId'],
+			where: {
+				twitchId: {
+					[Op.not]: null,
+				},
+			},
+		});
+
+		let response = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${process.env.TWITCH_CLIENT_ID}&client_secret=${process.env.TWITCH_CLIENT_SECRET}&grant_type=client_credentials`, {
+			method: 'POST',
+		});
+
+		let json = await response.json();
+
+		let accessToken = json.access_token;
+
+		for (let i = 0; i < twitchUsers.length; i++) {
+			await new Promise(resolve => setTimeout(resolve, 5000));
+			response = await fetch(`https://api.twitch.tv/helix/users?id=${twitchUsers[i].twitchId}`, {
+				headers: {
+					'Client-ID': process.env.TWITCH_CLIENT_ID,
+					'Authorization': `Bearer ${accessToken}`
+				}
+			});
+
+			if (response.status === 200) {
+				let json = await response.json();
+				if (json.data.length > 0) {
+					if (twitchUsers[i].twitchName !== json.data[0].login) {
+						bancho.twitchClient.join(json.data[0].login);
+					}
+
+					twitchUsers[i].twitchName = json.data[0].login;
+					twitchUsers[i].twitchId = json.data[0].id;
+					await twitchUsers[i].save();
+				}
+			}
+		}
 	},
 };
