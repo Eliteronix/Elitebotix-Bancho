@@ -507,13 +507,20 @@ module.exports = {
 
 		lobby.on('playerLeft', async () => {
 			console.log('Player left lobby');
-			console.log(lobby.players.length);
 
 			await lobby.updateSettings();
 
-			console.log(lobby.players.length);
+			let noPlayersLeft = true;
 
-			if (lobby.players.length === 0) {
+			for (let i = 0; i < 16; i++) {
+				let player = lobby.slots[i];
+				if (player) {
+					noPlayersLeft = false;
+					break;
+				}
+			}
+
+			if (noPlayersLeft) {
 				console.log('Lobby is empty - closing lobby ', lobby.id);
 
 				await lobby.closeLobby();
