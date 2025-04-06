@@ -460,7 +460,7 @@ module.exports = {
 			}
 		}
 	},
-	executeNextProcessQueueTask: async function (client, bancho) {
+	executeNextProcessQueueTask: async function (bancho) {
 		let now = new Date();
 
 		let nextTasks = await DBProcessQueue.findAll({

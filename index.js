@@ -65,14 +65,14 @@ function returnBoolean(value) {
 	return value;
 }
 
-async function executeProcessQueue(client, bancho) {
+async function executeProcessQueue(bancho) {
 	try {
-		await executeNextProcessQueueTask(client, bancho);
+		await executeNextProcessQueueTask(bancho);
 	} catch (e) {
 		console.error('index.js | executeNextProcessQueueTask' + e);
 	}
 
 	setTimeout(() => {
-		executeProcessQueue(client, bancho);
+		executeProcessQueue(bancho);
 	}, 1000);
 }
