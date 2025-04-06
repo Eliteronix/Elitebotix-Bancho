@@ -9,7 +9,7 @@ module.exports = {
 		for (let i = 0; i < bancho.commands.length; i++) {
 			if (bancho.commands[i].name === 'help') continue; // Skip the help command itself
 
-			let tags = 'general';
+			let tags = ['general'];
 
 			if (developers.includes(message.user.id)) {
 				tags.push('admin');
