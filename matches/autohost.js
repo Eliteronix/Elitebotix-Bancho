@@ -522,10 +522,8 @@ module.exports = {
 				await lobby.closeLobby();
 				await channel.leave();
 
-				//Remove the channel property from the bancho object
+				//Remove the channel property from the bancho object to avoid trying to rejoin
 				delete bancho.channels[`#mp_${lobby.id}`];
-
-				console.log(bancho.channels);
 
 				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
 				return;
