@@ -506,8 +506,6 @@ module.exports = {
 		});
 
 		lobby.on('playerLeft', async () => {
-			console.log('Player left lobby');
-
 			await lobby.updateSettings();
 
 			let noPlayersLeft = true;
@@ -521,9 +519,10 @@ module.exports = {
 			}
 
 			if (noPlayersLeft) {
-				console.log('Lobby is empty - closing lobby ', lobby.id);
-
 				await lobby.closeLobby();
+				await channel.leave();
+
+				console.log(bancho.channels);
 
 				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
 				return;
