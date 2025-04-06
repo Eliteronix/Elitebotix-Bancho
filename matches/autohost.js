@@ -523,7 +523,7 @@ module.exports = {
 				await channel.leave();
 
 				//Remove the channel property from the bancho object
-				delete bancho.channels[lobby.id];
+				delete bancho.channels[`#mp_${lobby.id}`];
 
 				console.log(bancho.channels);
 
