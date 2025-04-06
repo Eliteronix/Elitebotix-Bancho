@@ -107,9 +107,15 @@ module.exports = {
 				}
 				channel = await bancho.createLobby(matchName);
 				bancho.autoHosts.push(parseInt(channel.lobby.id));
+				if (settings.interaction) {
+					await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${settings.interaction};The lobby has been created. You have been sent an invite ingame.`, priority: 1, date: new Date() });
+				}
 				break;
 			} catch (error) {
 				if (i === 4) {
+					if (settings.interaction) {
+						await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${settings.interaction};I am having issues creating the lobby and the match has been aborted. Please try again later.`, priority: 1, date: new Date() });
+					}
 					return await trySendMessage(banchoUser, 'I am having issues creating the lobby and the match has been aborted. Please try again later.');
 				} else {
 					await new Promise(resolve => setTimeout(resolve, 10000));
