@@ -4,6 +4,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'np',
 	help: '/ /np - Get the pp values for the current beatmap with the current mods',
+	tags: ['general'],
 	async execute(bancho, message, args) {
 		let beatmapId = message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)[0].replace(/.+\//gm, '');
 

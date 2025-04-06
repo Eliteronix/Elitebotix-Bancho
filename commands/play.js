@@ -6,6 +6,7 @@ module.exports = {
 	name: 'play',
 	alias: ['play1v1', 'queue1v1'],
 	help: '!play / !play1v1 / !queue1v1 - Queue up for 1v1 matches',
+	tags: ['general'],
 	async execute(bancho, message, args) {
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['osuUserId'],

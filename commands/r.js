@@ -5,6 +5,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'r',
 	help: '!r [mod] [StarRating] - Get a beatmap recommendation for your current duel StarRating. If you don\'t have your account connected to the bot (can be done by using /osu-link command in discord) nor didn\'t specify desired Star Rating, it will use default value of 4.5*',
+	tags: ['general'],
 	async execute(bancho, message, args) {
 		let specifiedRating = false;
 

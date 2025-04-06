@@ -4,6 +4,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'with',
 	help: '!with - Get the pp values for the last map with the given mods',
+	tags: ['general'],
 	async execute(bancho, message, args) {
 		let mods = args.join('').toUpperCase();
 		let modBits = getModBits(mods);

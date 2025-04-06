@@ -4,6 +4,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'acc',
 	help: '!acc - Get the last map\'s pp value with the given accuracy',
+	tags: ['general'],
 	async execute(bancho, message, args) {
 		if (!args[0]) {
 			return await trySendMessage(message.user, 'Please specify an accuracy.');

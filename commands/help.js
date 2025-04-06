@@ -3,6 +3,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'help',
 	help: '!help - List all commands or get info about a specific command.',
+	tags: ['general'],
 	async execute(bancho, message, args) {
 		for (let i = 0; i < bancho.commands.length; i++) {
 			if (bancho.commands[i].help) {
