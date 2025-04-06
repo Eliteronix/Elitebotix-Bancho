@@ -22,7 +22,7 @@ module.exports = async function (bancho, message) {
 
 			// set a new item in the Collection
 			// with the key as the command name and the value as the exported module
-			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help, execute: command.execute });
+			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help, tags: command.tags, execute: command.execute });
 		}
 	}
 
