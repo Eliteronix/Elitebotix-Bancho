@@ -509,7 +509,10 @@ module.exports = {
 			await lobby.updateSettings();
 
 			if (lobby.players.length === 0) {
-				return await lobby.closeLobby();
+				await lobby.closeLobby();
+
+				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
+				return;
 			}
 		});
 
