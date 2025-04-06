@@ -3,6 +3,7 @@ require('dotenv').config();
 module.exports = {
 	name: "Elitebotix Bancho", // Name of your application
 	script: "index.js", // Entry point of your application
+	log_date_format: "YYYY-MM-DD HH:mm:ss",
 	// interpreter: "bun", // Bun interpreter
 	watch: returnBoolean(process.env.SERVER), // Watch for file changes
 	ignore_watch: [
