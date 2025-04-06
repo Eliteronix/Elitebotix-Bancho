@@ -3,7 +3,7 @@ const { trySendMessage } = require("../utils");
 module.exports = {
 	name: 'restart',
 	help: '!restart [force] - Restarts the bot',
-	tags: ['admin'],
+	tag: 'admin',
 	async execute(bancho, message, args) {
 		console.log(bancho.autoHosts);
 		if (args[0] && args[0].toLowerCase() === 'force') {

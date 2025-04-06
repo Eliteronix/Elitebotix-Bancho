@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { trySendMessage } = require('./utils');
+const { developers } = require('./config.json');
 
 // Replace utils and client dependencies
 
@@ -22,13 +23,19 @@ module.exports = async function (bancho, message) {
 
 			// set a new item in the Collection
 			// with the key as the command name and the value as the exported module
-			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help, tags: command.tags, execute: command.execute });
+			bancho.commands.push({ name: command.name, alias: command.alias, help: command.help, tag: command.tag, execute: command.execute });
 		}
 	}
 
 	let args = message.message.slice(1).trim().split(/ +/);
 
 	let commandName = args.shift().toLowerCase();
+
+	let tags = ['general'];
+
+	if (developers.includes(message.user.id)) {
+		tags.push('admin');
+	}
 
 	//Listen to now playing / now listening and send pp info
 	if (message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)) {
@@ -38,8 +45,8 @@ module.exports = async function (bancho, message) {
 	}
 
 	//Set the command and check for possible uses of aliases
-	let command = bancho.commands.find(cmd => cmd.name === commandName)
-		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName));
+	let command = bancho.commands.find(cmd => cmd.name === commandName && tags.includes(cmd.tag))
+		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName) && tags.includes(cmd.tag));
 
 	if (!command) {
 		if (message.user.username === process.env.OSUNAME) return;

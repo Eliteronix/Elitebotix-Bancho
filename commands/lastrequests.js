@@ -3,7 +3,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'lastrequests',
 	help: '!lastrequests - Shows the last 5 twitch requests again',
-	tags: ['general'],
+	tag: 'general',
 	async execute(bancho, message, args) {
 		let userRequests = [];
 

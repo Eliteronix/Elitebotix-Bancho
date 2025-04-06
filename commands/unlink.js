@@ -4,7 +4,7 @@ const { trySendMessage } = require('../utils');
 module.exports = {
 	name: 'unlink',
 	help: '!unlink - Unlink your discord account from your osu! account',
-	tags: ['general'],
+	tag: 'general',
 	async execute(bancho, message, args) {
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['id', 'userId', 'osuVerified'],
