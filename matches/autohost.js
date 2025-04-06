@@ -532,6 +532,12 @@ module.exports = {
 				delete bancho.channels[`#mp_${lobby.id}`];
 
 				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
+
+				// Restart if there are no more auto hosts and the bot is marked for update
+				if (bancho.autoHosts.length === 0 && bancho.update) {
+					process.exit(0);
+				}
+
 				return;
 			}
 		});
