@@ -108,7 +108,6 @@ module.exports = {
 				channel = await bancho.createLobby(matchName);
 				bancho.autoHosts.push(parseInt(channel.lobby.id));
 				if (settings.interaction) {
-					console.log(settings);
 					await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${settings.interaction};${settings.messageId};The lobby has been created. You have been sent an invite ingame.`, priority: 1, date: new Date() });
 				}
 				break;
