@@ -433,7 +433,30 @@ module.exports = {
 			}
 		});
 
+		let noPlayerJoined = false;
+
+		setTimeout(async () => {
+			if(noPlayerJoined){
+				await lobby.closeLobby();
+				await channel.leave();
+
+				//Remove the channel property from the bancho object to avoid trying to rejoin
+				delete bancho.channels[`#mp_${lobby.id}`];
+
+				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
+
+				// Restart if there are no more auto hosts and the bot is marked for update
+				if (bancho.autoHosts.length === 0 && bancho.update) {
+					process.exit(0);
+				}
+
+				return;
+			}
+		}, 600000);
+
 		lobby.on('playerJoined', async (obj) => {
+			noPlayerJoined = true;
+
 			if (discordUser.osuUserId === obj.player.user.id.toString()) {
 				await trySendMessage(channel, '!commands - Sends the list of commands.');
 				await trySendMessage(channel, '!abort - Aborts the currently playing map.');
