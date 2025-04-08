@@ -433,7 +433,7 @@ module.exports = {
 			}
 		});
 
-		let noPlayerJoined = false;
+		let noPlayerJoined = true;
 
 		setTimeout(async () => {
 			if(noPlayerJoined){
@@ -455,7 +455,7 @@ module.exports = {
 		}, 600000);
 
 		lobby.on('playerJoined', async (obj) => {
-			noPlayerJoined = true;
+			noPlayerJoined = false;
 
 			if (discordUser.osuUserId === obj.player.user.id.toString()) {
 				await trySendMessage(channel, '!commands - Sends the list of commands.');
