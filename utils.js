@@ -482,6 +482,15 @@ module.exports = {
 			executeFoundTask(bancho, nextTasks[0]);
 		}
 	},
+	restartIfPossible(bancho) {
+		if (!bancho.update) {
+			return;
+		}
+
+		if (bancho.duels.length === 0 && bancho.autoHosts.length === 0) {
+			process.exit(0);
+		}
+	}
 };
 
 async function executeFoundTask(bancho, nextTask) {

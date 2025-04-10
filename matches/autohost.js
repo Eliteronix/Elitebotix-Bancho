@@ -1,4 +1,4 @@
-const { logMatchCreation, addMatchMessage, trySendMessage } = require('../utils');
+const { logMatchCreation, addMatchMessage, trySendMessage, restartIfPossible, reconnectToBanchoAndChannels } = require('../utils');
 const { DBElitebotixDiscordUsers, DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue } = require('../dbObjects');
 const { Op } = require('sequelize');
 const { getNextMap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
@@ -98,13 +98,8 @@ module.exports = {
 
 		for (let i = 0; i < 5; i++) {
 			try {
-				try {
-					await bancho.connect();
-				} catch (error) {
-					if (error.message !== 'Already connected/connecting') {
-						throw (error);
-					}
-				}
+				await reconnectToBanchoAndChannels(bancho);
+
 				channel = await bancho.createLobby(matchName);
 				bancho.autoHosts.push(parseInt(channel.lobby.id));
 				if (settings.interaction) {
@@ -436,7 +431,7 @@ module.exports = {
 		let noPlayerJoined = true;
 
 		setTimeout(async () => {
-			if(noPlayerJoined){
+			if (noPlayerJoined) {
 				await lobby.closeLobby();
 				await channel.leave();
 
@@ -446,9 +441,7 @@ module.exports = {
 				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
 
 				// Restart if there are no more auto hosts and the bot is marked for update
-				if (bancho.autoHosts.length === 0 && bancho.update) {
-					process.exit(0);
-				}
+				restartIfPossible(bancho);
 
 				return;
 			}
@@ -557,9 +550,7 @@ module.exports = {
 				bancho.autoHosts = bancho.autoHosts.filter((id) => id !== parseInt(lobby.id));
 
 				// Restart if there are no more auto hosts and the bot is marked for update
-				if (bancho.autoHosts.length === 0 && bancho.update) {
-					process.exit(0);
-				}
+				restartIfPossible(bancho);
 
 				return;
 			}

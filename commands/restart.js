@@ -5,13 +5,15 @@ module.exports = {
 	help: '!restart [force] - Restarts the bot',
 	tag: 'admin',
 	async execute(bancho, message, args) {
-		console.log(bancho.autoHosts);
+		console.log('Duels', bancho.duels);
+		console.log('Autohosts', bancho.autoHosts);
 		if (args[0] && args[0].toLowerCase() === 'force' || bancho.autoHosts.length === 0) {
 			await trySendMessage(message.user, 'Restarting bot...');
 			process.exit(0);
 		} else {
 			await trySendMessage(message.user, 'Restarting bot when possible...');
 			bancho.update = 1;
+			restartIfPossible(bancho);
 		}
 	},
 };

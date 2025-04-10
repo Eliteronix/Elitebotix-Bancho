@@ -1,5 +1,7 @@
-const { logMatchCreation, updateQueueChannels } = require('../utils');
-const { getUserDuelStarRating, saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const { DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue } = require('../dbObjects');
+const { logMatchCreation, updateQueueChannels, addMatchMessage, restartIfPossible, reconnectToBanchoAndChannels } = require('../utils');
+const { getUserDuelStarRating, saveOsuMultiScores, getNextMap, humanReadable } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const osu = require('node-osu');
 
 module.exports = {
 	async execute(bancho, interaction, averageStarRating, lowerBound, upperBound, bestOf, onlyRanked, users, queued) {
@@ -17,8 +19,7 @@ module.exports = {
 		let threeMonthsAgo = new Date();
 		threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-		module.exports.logDatabaseQueries(4, 'utils.js createDuelMatch DBOsuMultiGameScores player scores');
-		const playerScores = await DBOsuMultiGameScores.findAll({
+		const playerScores = await DBElitebotixOsuMultiGameScores.findAll({
 			attributes: ['osuUserId', 'beatmapId', 'gameStartDate'],
 			where: {
 				osuUserId: {
@@ -109,15 +110,8 @@ module.exports = {
 
 		for (let i = 0; i < 5; i++) {
 			try {
-				try {
-					// console.log('Duel Match: Connecting to Bancho');
-					await bancho.connect();
-				} catch (error) {
-					// console.log(`Duel Match: Error connecting to Bancho: ${error}`);
-					if (!error.message === 'Already connected/connecting') {
-						throw (error);
-					}
-				}
+				await reconnectToBanchoAndChannels(bancho);
+
 				// console.log('Duel Match: Creating match');
 				if (users.length === 2) {
 					// console.log(`ETX: (${teamname1}) vs (${teamname2})`)
@@ -151,9 +145,7 @@ module.exports = {
 		let usersOnline = [];
 
 		channel.on('message', async (msg) => {
-			process.send(`osuuser ${msg.user.id}}`);
-
-			module.exports.addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
+			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 
 			if (usersToCheck.length && msg.user.ircUsername === 'BanchoBot') {
 				if (msg.message === 'The user is currently not online.') {
@@ -195,8 +187,7 @@ module.exports = {
 			lobby.closeLobby();
 
 			for (let i = 0; i < usersOnline.length; i++) {
-				module.exports.logDatabaseQueries(2, 'utils.js DBProcessQueue duelQueue1v1 requeue');
-				await DBProcessQueue.create({
+				await DBElitebotixProcessQueue.create({
 					guildId: 'none',
 					task: 'duelQueue1v1',
 					additions: `${usersOnline[i].osuUserId};${usersOnline[i].osuDuelStarRating};0.5`,
@@ -247,8 +238,7 @@ module.exports = {
 							let user = users.find(user => user.osuUserId === joinedUser);
 
 							//Requeue
-							module.exports.logDatabaseQueries(2, 'utils.js DBProcessQueue duelQueue1v1 requeue 2');
-							await DBProcessQueue.create({
+							await DBElitebotixProcessQueue.create({
 								guildId: 'none',
 								task: 'duelQueue1v1',
 								additions: `${user.osuUserId};${user.osuDuelStarRating};0.5`,
@@ -267,7 +257,18 @@ module.exports = {
 					//Not everyone joined and the lobby will be closed
 					await trySendMessage(channel, 'The lobby will be closed as not everyone joined.');
 					await new Promise(resolve => setTimeout(resolve, 60000));
-					return await lobby.closeLobby();
+					await lobby.closeLobby();
+					await channel.leave();
+
+					//Remove the channel property from the bancho object to avoid trying to rejoin
+					delete bancho.channels[`#mp_${lobby.id}`];
+
+					bancho.duels = bancho.duels.filter((id) => id !== parseInt(lobby.id));
+
+					// Restart if there are no more auto hosts and the bot is marked for update
+					restartIfPossible(bancho);
+
+					return;
 				} else if (lobbyStatus === 'Waiting for start') {
 					let playerHasNoMap = false;
 					for (let i = 0; i < 16; i++) {
@@ -294,8 +295,6 @@ module.exports = {
 		});
 
 		lobby.on('playerJoined', async (obj) => {
-			process.send(`osuuser ${obj.player.user.id}}`);
-
 			orderMatchPlayers(lobby, channel, [...users]);
 
 			//Add to an array of joined users for requeueing
@@ -324,9 +323,9 @@ module.exports = {
 					while (tries === 0 || lobby._beatmapId != nextMap.beatmapId) {
 						if (tries % 5 === 0) {
 							if (bestOf === 1) {
-								nextMap = await module.exports.getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
+								nextMap = await getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
 							} else {
-								nextMap = await module.exports.getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
+								nextMap = await getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
 							}
 							avoidMaps.push(nextMap.beatmapId);
 						}
@@ -439,8 +438,6 @@ module.exports = {
 			let firstTeam = team1.map(user => user.osuUserId);
 
 			for (let i = 0; i < results.length; i++) {
-				process.send(`osuuser ${results[i].player.user.id}}`);
-
 				if (firstTeam.includes(results[i].player.user.id.toString())) {
 					scoreTeam1 += parseFloat(results[i].score);
 				} else {
@@ -458,9 +455,16 @@ module.exports = {
 				scoreTeam1 = Math.round(scoreTeam1);
 				scoreTeam2 = Math.round(scoreTeam2);
 
-				await trySendMessage(channel, `Bo${bestOf} | ${teamname1}: ${module.exports.humanReadable(scoreTeam1)} | ${teamname2}: ${module.exports.humanReadable(scoreTeam2)} | Difference: ${module.exports.humanReadable(Math.abs(scoreTeam1 - scoreTeam2))} | Winner: ${winner}`);
+				await trySendMessage(channel, `Bo${bestOf} | ${teamname1}: ${humanReadable(scoreTeam1)} | ${teamname2}: ${humanReadable(scoreTeam2)} | Difference: ${humanReadable(Math.abs(scoreTeam1 - scoreTeam2))} | Winner: ${winner}`);
 			} else {
 				await lobby.closeLobby();
+				await channel.leave();
+
+				//Remove the channel property from the bancho object to avoid trying to rejoin
+				delete bancho.channels[`#mp_${lobby.id}`];
+
+				bancho.duels = bancho.duels.filter((id) => id !== parseInt(lobby.id));
+
 				const osuApi = new osu.Api(process.env.OSUTOKENV1, {
 					// baseUrl: sets the base api url (default: https://osu.ppy.sh/api)
 					notFoundAsError: true, // Throw an error on not found instead of returning nothing. (default: true)
@@ -475,6 +479,9 @@ module.exports = {
 					.catch(() => {
 						//Nothing
 					});
+
+				// Restart if there are no more auto hosts and the bot is marked for update
+				restartIfPossible(bancho);
 
 				return;
 			}
@@ -498,9 +505,9 @@ module.exports = {
 				while (tries === 0 || lobby._beatmapId != nextMap.beatmapId) {
 					if (tries % 5 === 0) {
 						if (scores[0] + scores[1] === bestOf - 1) {
-							nextMap = await module.exports.getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
+							nextMap = await getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
 						} else {
-							nextMap = await module.exports.getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
+							nextMap = await getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
 						}
 
 						avoidMaps.push(nextMap.beatmapId);
@@ -601,7 +608,18 @@ module.exports = {
 					});
 
 				await new Promise(resolve => setTimeout(resolve, 55000));
-				return await lobby.closeLobby();
+				await lobby.closeLobby();
+				await channel.leave();
+
+				//Remove the channel property from the bancho object to avoid trying to rejoin
+				delete bancho.channels[`#mp_${lobby.id}`];
+
+				bancho.duels = bancho.duels.filter((id) => id !== parseInt(lobby.id));
+
+				// Restart if there are no more auto hosts and the bot is marked for update
+				restartIfPossible(bancho);
+
+				return;
 			}
 		});
 	}
