@@ -6,7 +6,7 @@ const osu = require('node-osu');
 module.exports = {
 	async execute(bancho, interaction, averageStarRating, lowerBound, upperBound, bestOf, onlyRanked, users, queued) {
 		if (interaction) {
-			await interaction.editReply('Duel has been accepted. Getting necessary data...');
+			await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${interaction};Duel has been accepted. Getting necessary data...`, priority: 1, date: new Date() });
 		}
 
 		// Get the maps to avoid
@@ -105,7 +105,7 @@ module.exports = {
 		}
 
 		if (interaction) {
-			await interaction.editReply(`Creating match lobby for ${teamname1} vs ${teamname2}`);
+			await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${interaction};Creating match lobby for ${teamname1} vs ${teamname2}`, priority: 1, date: new Date() });
 		}
 
 		for (let i = 0; i < 5; i++) {
@@ -128,7 +128,7 @@ module.exports = {
 				if (i === 4) {
 					console.error(error);
 					if (interaction) {
-						return await interaction.editReply('I am having issues creating the lobby and the match has been aborted.\nPlease try again later.');
+						return await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${interaction};I am having issues creating the lobby and the match has been aborted.\nPlease try again later.`, priority: 1, date: new Date() });
 					} else {
 						return console.error('I am having issues creating a queued lobby and the match has been aborted.');
 					}
@@ -209,11 +209,11 @@ module.exports = {
 			await messageUserWithRetries(user, interaction, `Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``);
 		}
 
-		let pingMessage = null;
+		// let pingMessage = null;
 		if (interaction) {
-			await interaction.editReply(`<@${users.map(user => user.userId).join('>, <@')}> your match has been created. You have been invited ingame by \`${process.env.OSUNAME}\` and also got a DM as a backup. <https://osu.ppy.sh/mp/${lobby.id}>`);
-			pingMessage = await interaction.channel.send(`<@${users.map(user => user.userId).join('>, <@')}>`);
-			await pingMessage.delete();
+			await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${interaction};<@${users.map(user => user.userId).join('>, <@')}> your match has been created. You have been invited ingame by \`${process.env.OSUNAME}\` and also got a DM as a backup. <https://osu.ppy.sh/mp/${lobby.id}>`, priority: 1, date: new Date() });
+			// pingMessage = await interaction.channel.send(`<@${users.map(user => user.userId).join('>, <@')}>`);
+			// await pingMessage.delete();
 		}
 		//Start the timer to close the lobby if not everyone joined by then
 		await trySendMessage(channel, '!mp timer 300');
