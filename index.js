@@ -26,6 +26,7 @@ twitchConnect(bancho).then(twitch => {
 });
 
 bancho.lastUserMaps = {};
+bancho.duels = [];
 bancho.autoHosts = [];
 
 //Listen to messages
