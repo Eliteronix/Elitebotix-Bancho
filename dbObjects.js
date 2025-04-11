@@ -20,7 +20,7 @@ const processQueue = new Sequelize('database', 'username', 'password', {
 	host: 'localhost',
 	dialect: 'sqlite',
 	logging: false,
-	storage: `databases/processQueue.sqlite`,
+	storage: `${process.env.ELITEBOTIXBANCHOROOTPATH}/databases/processQueue.sqlite`,
 	retry: {
 		max: 25, // Maximum retry 15 times
 		backoffBase: 100, // Initial backoff duration in ms. Default: 100,
@@ -76,7 +76,7 @@ const elitebotixMultiMatches = new Sequelize('database', 'username', 'password',
 	}
 });
 
-const DBProcessQueue = require('./models/DBProcessQueue')(processQueue, Sequelize.DataTypes);
+const DBProcessQueue = require(`${process.env.ELITEBOTIXBANCHOROOTPATH}/models/DBProcessQueue`)(processQueue, Sequelize.DataTypes);
 
 const DBElitebotixProcessQueue = require(`${process.env.ELITEBOTIXROOTPATH}/models/DBProcessQueue`)(elitebotixProcessQueue, Sequelize.DataTypes);
 const DBElitebotixDiscordUsers = require(`${process.env.ELITEBOTIXROOTPATH}/models/DBDiscordUsers`)(elitebotixDiscordUsers, Sequelize.DataTypes);
