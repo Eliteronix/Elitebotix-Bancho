@@ -206,7 +206,7 @@ module.exports = {
 
 		for (let i = 0; i < users.length; i++) {
 			await trySendMessage(channel, `!mp invite #${users[i].osuUserId}`);
-			await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'messageUser', additions: `${interaction};${users[i].userId};Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``, priority: 1, date: new Date() });
+			await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'messageUser', additions: `${users[i].userId};${interaction};Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;[Duel] <@${users[i].userId}>, it seems like I can't DM you in Discord. Please enable DMs so that I can keep you up to date with the match procedure!`, priority: 1, date: new Date() });
 		}
 
 		// let pingMessage = null;
