@@ -1,7 +1,8 @@
-const { DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue } = require('../dbObjects');
-const { logMatchCreation, updateQueueChannels, addMatchMessage, restartIfPossible, reconnectToBanchoAndChannels } = require('../utils');
+const { DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue, DBElitebotixOsuMultiMatches } = require('../dbObjects');
+const { logMatchCreation, updateQueueChannels, addMatchMessage, restartIfPossible, reconnectToBanchoAndChannels, trySendMessage } = require('../utils');
 const { getUserDuelStarRating, saveOsuMultiScores, getNextMap, humanReadable } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 const osu = require('node-osu');
+const { osuFilterWords } = require('../config.json');
 
 module.exports = {
 	async execute(bancho, interaction, averageStarRating, lowerBound, upperBound, bestOf, onlyRanked, users, queued) {
@@ -205,8 +206,7 @@ module.exports = {
 
 		for (let i = 0; i < users.length; i++) {
 			await trySendMessage(channel, `!mp invite #${users[i].osuUserId}`);
-			let user = await client.users.fetch(users[i].userId);
-			await messageUserWithRetries(user, interaction, `Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``);
+			await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'messageUser', additions: `${interaction};${users[i].userId};Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``, priority: 1, date: new Date() });
 		}
 
 		// let pingMessage = null;
@@ -250,7 +250,7 @@ module.exports = {
 
 							//Message about requeueing
 							const IRCUser = bancho.getUser(user.osuName);
-							IRCUser.sendMessage('You have automatically been requeued for a 1v1 duel. You will be notified when a match is found.');
+							trySendMessage(IRCUser, 'You have automatically been requeued for a 1v1 duel. You will be notified when a match is found.');
 						});
 					}
 
@@ -598,7 +598,7 @@ module.exports = {
 							if (messages.length > 1) {
 								const IRCUser = await bancho.getUser(users[i].osuName);
 								for (let i = 0; i < messages.length; i++) {
-									await IRCUser.sendMessage(messages[i]);
+									await trySendMessage(IRCUser, messages[i]);
 								}
 							}
 						}
@@ -624,3 +624,135 @@ module.exports = {
 		});
 	}
 };
+
+async function orderMatchPlayers(lobby, channel, players) {
+	for (let i = 0; i < players.length; i++) {
+		players[i].slot = i;
+		let slot = lobby._slots.find(slot => slot && slot.user._id.toString() === players[i].osuUserId);
+
+		//Check if the players are in the correct teams
+		if (players.length > 2) {
+			let expectedTeam = 'Red';
+
+			if (i >= players.length / 2) {
+				expectedTeam = 'Blue';
+			}
+
+			if (slot && slot.team !== expectedTeam) {
+				trySendMessage(channel, `!mp team #${players[i].osuUserId} ${expectedTeam}`);
+			}
+		}
+	}
+
+	//Move players to their slots
+	let initialPlayerAmount = players.length;
+	let movedSomeone = true;
+	let hasEmptySlots = true;
+	while (players.length && hasEmptySlots) {
+		if (!movedSomeone) {
+			//Move someone to last slot if that is empty
+			await trySendMessage(channel, `!mp move #${players[0].osuUserId} ${initialPlayerAmount + 1}`);
+			await new Promise(resolve => setTimeout(resolve, 2000));
+		}
+
+		movedSomeone = false;
+
+		//Collect a list of empty slots
+		let emptySlots = [];
+		for (let i = 0; i < initialPlayerAmount + 1; i++) {
+			if (lobby._slots[i] === null) {
+				emptySlots.push(i);
+			}
+		}
+
+		if (emptySlots.length === 0) {
+			hasEmptySlots = false;
+			continue;
+		}
+
+		//Move players to the correct slots
+		for (let i = 0; i < players.length; i++) {
+			let slotIndex = null;
+			for (let j = 0; j < initialPlayerAmount + 1; j++) {
+				if (lobby._slots[j] && lobby._slots[j].user._id.toString() === players[i].osuUserId) {
+					slotIndex = j;
+				}
+			}
+
+			if (slotIndex === null) {
+				players.splice(i, 1);
+				i--;
+				continue;
+			}
+
+			if (players[i].slot !== slotIndex && emptySlots.includes(players[i].slot)) {
+				await trySendMessage(channel, `!mp move #${players[i].osuUserId} ${players[i].slot + 1}`);
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				emptySlots.splice(emptySlots.indexOf(players[i].slot), 1);
+				emptySlots.push(slotIndex);
+				movedSomeone = true;
+			} else if (players[i].slot === slotIndex) {
+				players.splice(i, 1);
+				i--;
+				continue;
+			}
+		}
+	}
+}
+
+async function getOsuMapInfo(dbBeatmap) {
+	const mapScores = await DBElitebotixOsuMultiGameScores.findAll({
+		attributes: ['matchId'],
+		where: {
+			beatmapId: dbBeatmap.beatmapId,
+			tourneyMatch: true,
+			warmup: {
+				[Op.not]: true
+			}
+		}
+	});
+
+	const matches = await DBElitebotixOsuMultiMatches.findAll({
+		attributes: ['matchName'],
+		where: {
+			matchId: {
+				[Op.in]: mapScores.map(score => score.matchId)
+			},
+			tourneyMatch: true,
+			matchName: {
+				[Op.notLike]: 'MOTD:%',
+			},
+		}
+	});
+
+	let tournaments = [];
+
+	for (let i = 0; i < matches.length; i++) {
+		let acronym = matches[i].matchName.replace(/:.+/gm, '');
+
+		if (tournaments.indexOf(acronym) === -1) {
+			tournaments.push(acronym);
+		}
+	}
+
+	let more = 0;
+
+	for (let i = 0; i < tournaments.length; i++) {
+		for (let j = 0; j < osuFilterWords.length; j++) {
+			if (tournaments[i].toLowerCase().includes(osuFilterWords[j])) {
+				tournaments.splice(i, 1);
+				i--;
+				more++;
+				break;
+			}
+		}
+	}
+
+	let tournamentString = `https://osu.ppy.sh/b/${dbBeatmap.beatmapId} | https://beatconnect.io/b/${dbBeatmap.beatmapsetId} | Map played ${mapScores.length} times in: ${tournaments.join(', ')}`;
+
+	if (more > 0) {
+		tournamentString += ` and ${more} more tournaments`;
+	}
+
+	return tournamentString;
+}
