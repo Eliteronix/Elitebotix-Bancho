@@ -28,6 +28,7 @@ twitchConnect(bancho).then(twitch => {
 bancho.lastUserMaps = {};
 bancho.duels = [];
 bancho.autoHosts = [];
+bancho.tourneyMatchReferees = [];
 
 //Listen to messages
 bancho.on('PM', async (message) => {

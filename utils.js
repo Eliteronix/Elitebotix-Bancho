@@ -491,7 +491,7 @@ module.exports = {
 			return;
 		}
 
-		if (bancho.duels.length === 0 && bancho.autoHosts.length === 0) {
+		if (bancho.duels.length === 0 && bancho.autoHosts.length === 0 && bancho.tourneyMatchReferees.length === 0) {
 			process.exit(0);
 		}
 	}
