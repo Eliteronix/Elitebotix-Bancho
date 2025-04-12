@@ -242,6 +242,10 @@ module.exports = {
 
 				matchID = matchID[0].replace(/.*\//gm, '');
 
+				if (isNaN(matchID)) {
+					return;
+				}
+
 				await DBElitebotixProcessQueue.create({
 					guildId: 'None',
 					task: 'importMatch',
