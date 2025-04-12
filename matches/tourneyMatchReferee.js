@@ -1,9 +1,8 @@
 const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuBeatmaps } = require('../dbObjects');
 const { logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage } = require('../utils');
 const osu = require('node-osu');
-const Discord = require('discord.js');
 const { logBroadcastEval } = require('../config.json');
-const { pause } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
+const { pause, saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 
 module.exports = {
 	async execute(bancho, processQueueEntry) {
@@ -164,22 +163,23 @@ module.exports = {
 		for (let i = 0; i < teams.length; i++) {
 			for (let j = 0; j < teams[i].length; j++) {
 				await trySendMessage(channel, `!mp invite #${teams[i][j].osuUserId}`); //TODO: This
-				await messageUserWithRetries(client, teams[i][j].user, args[1], `Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``);
+				await DBElitebotixProcessQueue.create({
+					guildId: 'None',
+					task: 'messageUserOrChannel',
+					additions: `${teams[i][j].userId};${args[1]};Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;<@${user.id}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!`,
+					priority: 1,
+					date: new Date()
+				});
 			}
 		}
 
-		if (logBroadcastEval) {
-			// eslint-disable-next-line no-console
-			console.log('Broadcasting processQueueTasks/tourneyMatchReferee.js match created invite sent to shards...');
-		}
-
-		client.shard.broadcastEval(async (c, { channelId, message }) => {
-			let channel = await c.channels.cache.get(channelId);
-			if (channel) {
-				console.log(`[Shard ${c.shard.ids[0]}] Sending message to ${channelId} [${message}]`);
-				await channel.send(message);
-			}
-		}, { context: { channelId: args[1], message: `<@${discordIds.join('>, <@')}> your match has been created. You have been invited ingame by \`${process.env.OSUNAME}\` and also got a DM as a backup.` } });
+		await DBElitebotixProcessQueue.create({
+			guildId: 'None',
+			task: 'messageChannel',
+			additions: `${args[1]};<@${discordIds.join('>, <@')}> your match has been created. You have been invited ingame by \`${process.env.OSUNAME}\` and also got a DM as a backup.`,
+			priority: 1,
+			date: new Date()
+		});
 
 		//Add timers to 10 minutes after the match and also during the scheduled time send another message
 		let matchStartingTime = new Date();
@@ -255,8 +255,7 @@ module.exports = {
 					let players = args[3].replaceAll('|', ',').split(',');
 					let dbPlayers = [];
 					for (let j = 0; j < players.length; j++) {
-						logDatabaseQueries(2, 'processQueueTasks/tourneyMatchReferee.js DBDiscordUsers 4');
-						const dbDiscordUser = await DBDiscordUsers.findOne({
+						const dbDiscordUser = await DBElitebotixDiscordUsers.findOne({
 							attributes: ['id', 'osuName'],
 							where: {
 								id: players[j]
@@ -273,9 +272,26 @@ module.exports = {
 						players = players.replace(dbPlayers[j].dataValues.id, dbPlayers[j].dataValues.osuName);
 					}
 
-					let user = await client.users.fetch(args[0]);
-					await user.send(`The scheduled Qualifier has been aborted because no one showed up. <https://osu.ppy.sh/mp/${lobby.id}>\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`);
-					return await channel.leave();
+					await DBElitebotixProcessQueue.create({
+						guildId: 'None',
+						task: 'messageUser',
+						additions: `${args[0]};;The scheduled Qualifier has been aborted because no one showed up. <https://osu.ppy.sh/mp/${lobby.id}>\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`,
+						priority: 1,
+						date: new Date()
+					});
+
+					await lobby.closeLobby();
+					await channel.leave();
+
+					//Remove the channel property from the bancho object to avoid trying to rejoin
+					delete bancho.channels[`#mp_${lobby.id}`];
+
+					bancho.tourneyMatchReferees = bancho.tourneyMatchReferees.filter((id) => id !== parseInt(lobby.id));
+
+					// Restart if there are no more auto hosts and the bot is marked for update
+					restartIfPossible(bancho);
+
+					return;
 				}
 
 				lobbyStatus = 'Waiting for start';
@@ -330,19 +346,22 @@ module.exports = {
 						for (let j = 0; j < teams[i].length; j++) {
 							if (!lobby.playersById[teams[i][j].osuUserId.toString()]) {
 								await trySendMessage(channel, `!mp invite #${teams[i][j].osuUserId}`);
-								await messageUserWithRetries(client, teams[i][j].user, args[1], `Your match is about to start. Please join as soon as possible. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``);
 
-								if (logBroadcastEval) {
-									// eslint-disable-next-line no-console
-									console.log('Broadcasting processQueueTasks/tourneyMatchReferee.js about to start, another invite to shards...');
-								}
+								await DBElitebotixProcessQueue.create({
+									guildId: 'None',
+									task: 'messageUserOrChannel',
+									additions: `${teams[i][j].userId};${args[1]};Your match is about to start. Please join as soon as possible. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;<@${user.id}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!`,
+									priority: 1,
+									date: new Date()
+								});
 
-								client.shard.broadcastEval(async (c, { channelId, message }) => {
-									const channel = c.channels.cache.get(channelId);
-									if (channel) {
-										await channel.send(message);
-									}
-								}, { context: { channelId: args[1], message: `<@${teams[i][j].userId}> The lobby is about to start. I've sent you another invite.` } });
+								await DBElitebotixProcessQueue.create({
+									guildId: 'None',
+									task: 'messageChannel',
+									additions: `${args[1]};<@${teams[i][j].userId}> The lobby is about to start. I've sent you another invite.`,
+									priority: 1,
+									date: new Date()
+								});
 							}
 						}
 					}
@@ -351,8 +370,6 @@ module.exports = {
 		});
 
 		lobby.on('playerJoined', async (obj) => {
-			process.send(`osuuser ${obj.player.user.id}}`);
-
 			if (!playerIds.includes(obj.player.user.id.toString())) {
 				trySendMessage(channel, `!mp kick #${obj.player.user.id}`);
 			} else if (lobbyStatus === 'Joining phase') {
@@ -452,10 +469,6 @@ module.exports = {
 
 		// eslint-disable-next-line no-unused-vars
 		lobby.on('matchFinished', async (results) => {
-			for (let i = 0; i < results.length; i++) {
-				process.send(`osuuser ${results[i].player.user.id}}`);
-			}
-
 			mapIndex++;
 			if (mapIndex < dbMaps.length) {
 				lobbyStatus = 'Waiting for start';
@@ -507,10 +520,9 @@ module.exports = {
 					parseNumeric: false // Parse numeric values into numbers/floats, excluding ids
 				});
 
-				logOsuAPICalls('processQueueTasks/tourneyMatchReferee.js');
 				osuApi.getMatch({ mp: lobby.id })
 					.then(async (match) => {
-						saveOsuMultiScores(match, client);
+						saveOsuMultiScores(match);
 					})
 					.catch(() => {
 						//Nothing
@@ -519,8 +531,7 @@ module.exports = {
 				let players = args[3].replaceAll('|', ',').split(',');
 				let dbPlayers = [];
 				for (let j = 0; j < players.length; j++) {
-					logDatabaseQueries(2, 'processQueueTasks/tourneyMatchReferee.js DBDiscordUsers 5');
-					const dbDiscordUser = await DBDiscordUsers.findOne({
+					const dbDiscordUser = await DBElitebotixDiscordUsers.findOne({
 						attributes: ['id', 'osuName'],
 						where: {
 							id: players[j]
@@ -537,50 +548,27 @@ module.exports = {
 					players = players.replace(dbPlayers[j].dataValues.id, dbPlayers[j].dataValues.osuName);
 				}
 
-				// Attach match log
-				let attachment = new Discord.AttachmentBuilder(`${process.env.ELITEBOTIXBANCHOROOTPATH}/matchLogs/${channel.lobby.id}.txt`, { name: `${channel.lobby.id}.txt` });
+				await DBElitebotixProcessQueue.create({
+					guildId: 'None',
+					task: 'messageUserWithMatchlog',
+					additions: `${args[0]};The scheduled Qualifier match has finished. <https://osu.ppy.sh/mp/${lobby.id}>\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]};${process.env.ELITEBOTIXBANCHOROOTPATH}/matchLogs/${channel.lobby.id}.txt;${channel.lobby.id}.txt`,
+					priority: 1,
+					date: new Date()
+				});
 
-				let user = await client.users.fetch(args[0]);
-				await user.send({ content: `The scheduled Qualifier match has finished. <https://osu.ppy.sh/mp/${lobby.id}>\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`, files: [attachment] });
+				await lobby.closeLobby();
+				await channel.leave();
 
-				return await channel.leave();
+				//Remove the channel property from the bancho object to avoid trying to rejoin
+				delete bancho.channels[`#mp_${lobby.id}`];
 
+				bancho.tourneyMatchReferees = bancho.tourneyMatchReferees.filter((id) => id !== parseInt(lobby.id));
+
+				// Restart if there are no more auto hosts and the bot is marked for update
+				restartIfPossible(bancho);
+
+				return;
 			}
 		});
 	},
 };
-
-async function messageUserWithRetries(client, user, channelId, content) {
-	for (let i = 0; i < 3; i++) {
-		try {
-			await user.send(content)
-				.then(() => {
-					i = Infinity;
-				})
-				.catch(async (error) => {
-					throw (error);
-				});
-		} catch (error) {
-			if (error.message === 'Cannot send messages to this user' || error.message === 'Internal Server Error') {
-				if (i === 2) {
-					if (logBroadcastEval) {
-						// eslint-disable-next-line no-console
-						console.log('Broadcasting processQueueTasks/tourneyMatchReferee.js DM issues to shards...');
-					}
-
-					client.shard.broadcastEval(async (c, { channelId, message }) => {
-						const channel = await c.channels.cache.get(channelId);
-						if (channel) {
-							await channel.send(message);
-						}
-					}, { context: { channelId: channelId, message: `<@${user.id}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!` } });
-				} else {
-					await pause(2500);
-				}
-			} else {
-				i = Infinity;
-				console.error(error);
-			}
-		}
-	}
-}
