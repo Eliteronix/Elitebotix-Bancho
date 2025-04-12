@@ -186,7 +186,13 @@ module.exports = {
 		}
 
 		if (usersNotOnline.length) {
-			lobby.closeLobby();
+			await lobby.closeLobby();
+			await channel.leave();
+
+			//Remove the channel property from the bancho object to avoid trying to rejoin
+			delete bancho.channels[`#mp_${lobby.id}`];
+
+			bancho.duels = bancho.duels.filter((id) => id !== parseInt(lobby.id));
 
 			for (let i = 0; i < usersOnline.length; i++) {
 				await DBElitebotixProcessQueue.create({
@@ -199,6 +205,9 @@ module.exports = {
 			}
 
 			updateQueueChannels();
+
+			// Restart if there are no more auto hosts and the bot is marked for update
+			restartIfPossible(bancho);
 			return;
 		}
 
