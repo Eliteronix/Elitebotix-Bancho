@@ -1,4 +1,4 @@
-const { trySendMessage } = require("../utils");
+const { trySendMessage, restartIfPossible } = require("../utils");
 
 module.exports = {
 	name: 'restart',
