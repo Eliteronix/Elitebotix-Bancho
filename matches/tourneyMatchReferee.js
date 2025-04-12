@@ -1,8 +1,9 @@
-const { DBDiscordUsers, DBOsuBeatmaps, DBElitebotixProcessQueue, DBElitebotixDiscordUsers } = require('../dbObjects');
-const { pause, saveOsuMultiScores, logMatchCreation, addMatchMessage, updateCurrentMatchesChannel, logOsuAPICalls, reconnectToBanchoAndChannels } = require('../utils');
+const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuBeatmaps } = require('../dbObjects');
+const { logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage } = require('../utils');
 const osu = require('node-osu');
 const Discord = require('discord.js');
 const { logBroadcastEval } = require('../config.json');
+const { pause } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 
 module.exports = {
 	async execute(bancho, processQueueEntry) {
@@ -55,19 +56,13 @@ module.exports = {
 
 					await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'messageUser', additions: `${args[0]};;I am having issues creating the lobby and the match has been aborted.\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`, priority: 1, date: new Date() });
 
-					// TODO: From here
-
-					if (logBroadcastEval) {
-						// eslint-disable-next-line no-console
-						console.log('Broadcasting processQueueTasks/tourneyMatchReferee.js issues creating lobby to shards...');
-					}
-
-					client.shard.broadcastEval(async (c, { channelId, message }) => {
-						let channel = await c.channels.cache.get(channelId);
-						if (channel) {
-							await channel.send(message);
-						}
-					}, { context: { channelId: args[1], message: `I am having issues creating the lobby and the match has been aborted.\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}` } });
+					await DBElitebotixProcessQueue.create({
+						guildId: 'None',
+						task: 'messageChannel',
+						additions: `${args[1]};;I am having issues creating the lobby and the match has been aborted.\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`,
+						priority: 1,
+						date: new Date()
+					});
 					return;
 				} else {
 					await pause(10000);
@@ -81,8 +76,7 @@ module.exports = {
 		for (let i = 0; i < teams.length; i++) {
 			teams[i] = teams[i].split(',');
 			for (let j = 0; j < teams[i].length; j++) {
-				logDatabaseQueries(2, 'processQueueTasks/tourneyMatchReferee.js DBDiscordUsers 2');
-				const dbDiscordUser = await DBDiscordUsers.findOne({
+				const dbDiscordUser = await DBElitebotixDiscordUsers.findOne({
 					attributes: ['osuUserId', 'userId', 'osuName'],
 					where: {
 						id: teams[i][j]
@@ -92,16 +86,14 @@ module.exports = {
 				playerIds.push(dbDiscordUser.osuUserId);
 				discordIds.push(dbDiscordUser.userId);
 
-				const user = await client.users.fetch(dbDiscordUser.userId);
-				dbDiscordUser.user = user;
+				// const user = await client.users.fetch(dbDiscordUser.userId); //TODO: This
+				// dbDiscordUser.user = user;
 
 				teams[i][j] = dbDiscordUser;
 			}
 		}
 
 		channel.on('message', async (msg) => {
-			process.send(`osuuser ${msg.user.id}}`);
-
 			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 		});
 
@@ -112,9 +104,9 @@ module.exports = {
 
 		let matchMessages = [];
 		await lobby.setPassword(password);
-		await channel.sendMessage('!mp addref Eliteronix');
-		await channel.sendMessage('!mp map 975342 0');
-		await channel.sendMessage(`!mp set 0 ${args[7]} ${playerIds.length}`);
+		await trySendMessage(channel, '!mp addref Eliteronix');
+		await trySendMessage(channel, '!mp map 975342 0');
+		await trySendMessage(channel, `!mp set 0 ${args[7]} ${playerIds.length}`);
 		let lobbyStatus = 'Joining phase';
 		let mapIndex = 0;
 		let maps = args[2].split(',');
@@ -122,8 +114,7 @@ module.exports = {
 		let dbMaps = [];
 
 		for (let i = 0; i < maps.length; i++) {
-			logDatabaseQueries(2, 'processQueueTasks/tourneyMatchReferee.js DBOsuBeatmaps');
-			const dbOsuBeatmap = await DBOsuBeatmaps.findOne({
+			const dbOsuBeatmap = await DBElitebotixOsuBeatmaps.findOne({
 				attributes: ['beatmapId', 'mods'],
 				where: {
 					id: maps[i]
@@ -142,8 +133,7 @@ module.exports = {
 			let players = args[3].replaceAll('|', ',').split(',');
 			let dbPlayers = [];
 			for (let j = 0; j < players.length; j++) {
-				logDatabaseQueries(2, 'processQueueTasks/tourneyMatchReferee.js DBDiscordUsers 3');
-				const dbDiscordUser = await DBDiscordUsers.findOne({
+				const dbDiscordUser = await DBElitebotixDiscordUsers.findOne({
 					attributes: ['id', 'osuName'],
 					where: {
 						id: players[j]
@@ -160,15 +150,20 @@ module.exports = {
 				players = players.replace(dbPlayers[j].dataValues.id, dbPlayers[j].dataValues.osuName);
 			}
 
-			let user = await client.users.fetch(args[0]);
-			await user.send(`The scheduled Qualifier match has started. <https://osu.ppy.sh/mp/${lobby.id}>\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`);
+			await DBElitebotixProcessQueue.create({
+				guildId: 'None',
+				task: 'messageUser',
+				additions: `${args[0]};;The scheduled Qualifier match has started. <https://osu.ppy.sh/mp/${lobby.id}>\nMatch: \`${args[5]}\`\nScheduled players: ${players}\nMappool: ${args[6]}`,
+				priority: 1,
+				date: new Date()
+			});
 		} catch (e) {
 			//Nothing
 		}
 
 		for (let i = 0; i < teams.length; i++) {
 			for (let j = 0; j < teams[i].length; j++) {
-				await channel.sendMessage(`!mp invite #${teams[i][j].osuUserId}`);
+				await trySendMessage(channel, `!mp invite #${teams[i][j].osuUserId}`); //TODO: This
 				await messageUserWithRetries(client, teams[i][j].user, args[1], `Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``);
 			}
 		}
@@ -207,7 +202,7 @@ module.exports = {
 		forfeitTimer.setUTCMinutes(processQueueEntry.date.getUTCMinutes() + 20);
 		let currentTime = new Date();
 		let secondsUntilForfeit = Math.round((forfeitTimer - currentTime) / 1000) + 30;
-		await channel.sendMessage(`!mp timer ${secondsUntilForfeit}`);
+		await trySendMessage(channel, `!mp timer ${secondsUntilForfeit}`);
 		let noFail = 0;
 		if (args[4] === 'true') {
 			noFail = 1;
@@ -231,17 +226,17 @@ module.exports = {
 					}
 
 					if (allPlayersReady) {
-						await channel.sendMessage('!mp start 10');
+						await trySendMessage(channel, '!mp start 10');
 
 						lobbyStatus === 'Map being played';
 					} else {
 						lobbyStatus = 'Waiting for start';
 
-						await channel.sendMessage('Everyone please ready up!');
-						await channel.sendMessage('!mp timer 120');
+						await trySendMessage(channel, 'Everyone please ready up!');
+						await trySendMessage(channel, '!mp timer 120');
 					}
 				} else if (lobbyStatus === 'Waiting for start') {
-					await channel.sendMessage('!mp start 10');
+					await trySendMessage(channel, '!mp start 10');
 
 					lobbyStatus === 'Map being played';
 				}
@@ -255,7 +250,7 @@ module.exports = {
 
 				if (noPlayers) {
 					lobbyStatus = 'Aborted';
-					await channel.sendMessage('!mp close');
+					await trySendMessage(channel, '!mp close');
 
 					let players = args[3].replaceAll('|', ',').split(',');
 					let dbPlayers = [];
@@ -287,8 +282,8 @@ module.exports = {
 
 				let tries = 0;
 				while (lobby._beatmapId != dbMaps[mapIndex].beatmapId && tries < 25) {
-					await channel.sendMessage('!mp abort');
-					await channel.sendMessage(`!mp map ${dbMaps[mapIndex].beatmapId}`);
+					await trySendMessage(channel, '!mp abort');
+					await trySendMessage(channel, `!mp map ${dbMaps[mapIndex].beatmapId}`);
 					await pause(5000);
 					await lobby.updateSettings();
 					tries++;
@@ -301,7 +296,7 @@ module.exports = {
 					}
 				}
 				while (parseInt(dbMaps[mapIndex].mods) + noFail !== modBits) {
-					await channel.sendMessage(`!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail}`);
+					await trySendMessage(channel, `!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail}`);
 					await pause(5000);
 					modBits = 0;
 					if (lobby.mods) {
@@ -312,12 +307,12 @@ module.exports = {
 				}
 
 				if (dbMaps[mapIndex].freeMod) {
-					await channel.sendMessage(`!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail} freemod`);
-					await channel.sendMessage(args[8]);
+					await trySendMessage(channel, `!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail} freemod`);
+					await trySendMessage(channel, args[8]);
 				}
 
-				await channel.sendMessage('Everyone please ready up!');
-				await channel.sendMessage('!mp timer 120');
+				await trySendMessage(channel, 'Everyone please ready up!');
+				await trySendMessage(channel, '!mp timer 120');
 			} else if (matchStartingTime < now && !secondRoundOfInvitesSent && lobbyStatus === 'Joining phase') {
 				secondRoundOfInvitesSent = true;
 				await lobby.updateSettings();
@@ -334,7 +329,7 @@ module.exports = {
 					if (playersInLobby < parseInt(args[9])) {
 						for (let j = 0; j < teams[i].length; j++) {
 							if (!lobby.playersById[teams[i][j].osuUserId.toString()]) {
-								await channel.sendMessage(`!mp invite #${teams[i][j].osuUserId}`);
+								await trySendMessage(channel, `!mp invite #${teams[i][j].osuUserId}`);
 								await messageUserWithRetries(client, teams[i][j].user, args[1], `Your match is about to start. Please join as soon as possible. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\``);
 
 								if (logBroadcastEval) {
@@ -359,7 +354,7 @@ module.exports = {
 			process.send(`osuuser ${obj.player.user.id}}`);
 
 			if (!playerIds.includes(obj.player.user.id.toString())) {
-				channel.sendMessage(`!mp kick #${obj.player.user.id}`);
+				trySendMessage(channel, `!mp kick #${obj.player.user.id}`);
 			} else if (lobbyStatus === 'Joining phase') {
 				await lobby.updateSettings();
 				let allTeamsJoined = true;
@@ -381,8 +376,8 @@ module.exports = {
 
 					let tries = 0;
 					while (lobby._beatmapId != dbMaps[mapIndex].beatmapId && tries < 25) {
-						await channel.sendMessage('!mp abort');
-						await channel.sendMessage(`!mp map ${dbMaps[mapIndex].beatmapId}`);
+						await trySendMessage(channel, '!mp abort');
+						await trySendMessage(channel, `!mp map ${dbMaps[mapIndex].beatmapId}`);
 						await pause(5000);
 						tries++;
 					}
@@ -394,7 +389,7 @@ module.exports = {
 						}
 					}
 					while (parseInt(dbMaps[mapIndex].mods) + noFail !== modBits) {
-						await channel.sendMessage(`!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail}`);
+						await trySendMessage(channel, `!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail}`);
 						await pause(5000);
 						modBits = 0;
 						if (lobby.mods) {
@@ -405,12 +400,12 @@ module.exports = {
 					}
 
 					if (dbMaps[mapIndex].freeMod) {
-						await channel.sendMessage(`!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail} freemod`);
-						await channel.sendMessage(args[8]);
+						await trySendMessage(channel, `!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail} freemod`);
+						await trySendMessage(channel, args[8]);
 					}
 
-					await channel.sendMessage('Everyone please ready up!');
-					await channel.sendMessage('!mp timer 120');
+					await trySendMessage(channel, 'Everyone please ready up!');
+					await trySendMessage(channel, '!mp timer 120');
 				}
 			}
 
@@ -449,7 +444,7 @@ module.exports = {
 
 			//Check that all players are in the lobby that previously joined
 			if (lobbyStatus === 'Waiting for start' && teamsInLobby >= teamsThatDontSeemToForfeit.length) {
-				await channel.sendMessage('!mp start 10');
+				await trySendMessage(channel, '!mp start 10');
 
 				lobbyStatus === 'Map being played';
 			}
@@ -467,8 +462,8 @@ module.exports = {
 
 				let tries = 0;
 				while (lobby._beatmapId != dbMaps[mapIndex].beatmapId && tries < 25) {
-					await channel.sendMessage('!mp abort');
-					await channel.sendMessage(`!mp map ${dbMaps[mapIndex].beatmapId}`);
+					await trySendMessage(channel, '!mp abort');
+					await trySendMessage(channel, `!mp map ${dbMaps[mapIndex].beatmapId}`);
 					await pause(5000);
 					await lobby.updateSettings();
 					tries++;
@@ -481,7 +476,7 @@ module.exports = {
 					}
 				}
 				while (parseInt(dbMaps[mapIndex].mods) + noFail !== modBits) {
-					await channel.sendMessage(`!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail}`);
+					await trySendMessage(channel, `!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail}`);
 					await pause(5000);
 					await lobby.updateSettings();
 					modBits = 0;
@@ -493,18 +488,18 @@ module.exports = {
 				}
 
 				if (dbMaps[mapIndex].freeMod) {
-					await channel.sendMessage(`!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail} freemod`);
-					await channel.sendMessage(args[8]);
+					await trySendMessage(channel, `!mp mods ${parseInt(dbMaps[mapIndex].mods) + noFail} freemod`);
+					await trySendMessage(channel, args[8]);
 				}
 
-				await channel.sendMessage('Everyone please ready up!');
-				await channel.sendMessage('!mp timer 120');
+				await trySendMessage(channel, 'Everyone please ready up!');
+				await trySendMessage(channel, '!mp timer 120');
 			} else {
 				lobbyStatus = 'Lobby finished';
 
-				await channel.sendMessage('Thank you everyone for playing! The lobby will automatically close in one minute.');
+				await trySendMessage(channel, 'Thank you everyone for playing! The lobby will automatically close in one minute.');
 				await pause(60000);
-				await channel.sendMessage('!mp close');
+				await trySendMessage(channel, '!mp close');
 				const osuApi = new osu.Api(process.env.OSUTOKENV1, {
 					// baseUrl: sets the base api url (default: https://osu.ppy.sh/api)
 					notFoundAsError: true, // Throw an error on not found instead of returning nothing. (default: true)
