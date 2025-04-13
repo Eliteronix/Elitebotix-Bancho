@@ -93,16 +93,17 @@ module.exports = {
 			}
 		}
 
+		let matchMessages = [];
+
 		channel.on('message', async (msg) => {
 			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 		});
 
 		const lobby = channel.lobby;
-		logMatchCreation(client, lobby.name, lobby.id);
+		logMatchCreation(lobby.name, lobby.id);
 
 		const password = Math.random().toString(36).substring(8);
 
-		let matchMessages = [];
 		await lobby.setPassword(password);
 		await trySendMessage(channel, '!mp addref Eliteronix');
 		await trySendMessage(channel, '!mp map 975342 0');
@@ -167,7 +168,7 @@ module.exports = {
 				await DBElitebotixProcessQueue.create({
 					guildId: 'None',
 					task: 'messageUserOrChannel',
-					additions: `${teams[i][j].userId};${args[1]};Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;<@${user.id}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!`,
+					additions: `${teams[i][j].userId};${args[1]};Your match has been created. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;<@${teams[i][j].userId}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!`,
 					priority: 1,
 					date: new Date()
 				});
@@ -351,7 +352,7 @@ module.exports = {
 								await DBElitebotixProcessQueue.create({
 									guildId: 'None',
 									task: 'messageUserOrChannel',
-									additions: `${teams[i][j].userId};${args[1]};Your match is about to start. Please join as soon as possible. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;<@${user.id}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!`,
+									additions: `${teams[i][j].userId};${args[1]};Your match is about to start. Please join as soon as possible. <https://osu.ppy.sh/mp/${lobby.id}>\nPlease join it using the sent invite ingame.\nIf you did not receive an invite search for the lobby \`${lobby.name}\` and enter the password \`${password}\`;<@${teams[i][j].userId}>, it seems like I can't DM you. Please enable DMs so that I can keep you up to date with the match procedure!`,
 									priority: 1,
 									date: new Date()
 								});
