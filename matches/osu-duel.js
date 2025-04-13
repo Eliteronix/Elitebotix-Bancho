@@ -382,6 +382,37 @@ module.exports = {
 			}
 		});
 
+		lobby.on('playerLeft', async () => {
+			if (lobbyStatus !== 'Joining phase') {
+				await lobby.updateSettings();
+
+				let noPlayersLeft = true;
+
+				for (let i = 0; i < 16; i++) {
+					let player = lobby.slots[i];
+					if (player) {
+						noPlayersLeft = false;
+						break;
+					}
+				}
+
+				if (noPlayersLeft) {
+					await lobby.closeLobby();
+					await channel.leave();
+
+					//Remove the channel property from the bancho object to avoid trying to rejoin
+					delete bancho.channels[`#mp_${lobby.id}`];
+
+					bancho.duels = bancho.duels.filter((id) => id !== parseInt(lobby.id));
+
+					// Restart if there are no more auto hosts and the bot is marked for update
+					restartIfPossible(bancho);
+
+					return;
+				}
+			}
+		});
+
 		lobby.on('allPlayersReady', async () => {
 			await lobby.updateSettings();
 			let playersInLobby = 0;
