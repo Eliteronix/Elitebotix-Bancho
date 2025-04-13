@@ -383,7 +383,7 @@ module.exports = {
 		});
 
 		lobby.on('playerLeft', async () => {
-			if (lobbyStatus !== 'Joining phase') {
+			if (lobbyStatus !== 'Joining phase' && lobbyStatus !== 'Lobby finished') {
 				await lobby.updateSettings();
 
 				let noPlayersLeft = true;
