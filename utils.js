@@ -41,6 +41,14 @@ module.exports = {
 			priority: 0
 		});
 	},
+	async updateCurrentMatchesChannel() {
+		await DBElitebotixProcessQueue.create({
+			guildId: 'none',
+			task: 'updateCurrentMatches',
+			date: new Date(),
+			priority: 0
+		});
+	},
 	async trySendMessage(destination, message) {
 		try {
 			await destination.sendMessage(message);

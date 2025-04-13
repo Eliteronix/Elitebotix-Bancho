@@ -1,5 +1,5 @@
 const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuBeatmaps } = require('../dbObjects');
-const { logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage } = require('../utils');
+const { logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage, updateCurrentMatchesChannel } = require('../utils');
 const osu = require('node-osu');
 const { logBroadcastEval } = require('../config.json');
 const { pause, saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
@@ -25,12 +25,13 @@ module.exports = {
 				}
 
 				DBElitebotixProcessQueue.create({ guildId: 'None', task: 'importMatch', additions: `${channel.lobby.id};${tourneyMatch};${new Date().getTime()};${args[5]}`, priority: 1, date: new Date() });
-				updateCurrentMatchesChannel(client);
+				updateCurrentMatchesChannel();
 
 				processQueueEntry.destroy();
 				break;
 			} catch (error) {
 				if (i === 4) {
+					console.error(error);
 					processQueueEntry.destroy();
 
 					let players = args[3].replaceAll('|', ',').split(',');
