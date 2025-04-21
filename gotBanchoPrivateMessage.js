@@ -48,7 +48,7 @@ module.exports = async function (bancho, message) {
 	let command = bancho.commands.find(cmd => cmd.name === commandName && tags.includes(cmd.tag))
 		|| bancho.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName) && tags.includes(cmd.tag));
 
-	if (!command) {
+	if (!command || command.name === 'np') {
 		if (message.user.username === process.env.OSUNAME) return;
 		return await trySendMessage(message.user, 'Command not found. Use !help to get a list of all commands.');
 	}
