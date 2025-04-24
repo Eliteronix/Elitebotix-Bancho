@@ -499,10 +499,13 @@ module.exports = {
 			return;
 		}
 
-		if (bancho.duels.length === 0 && bancho.autoHosts.length === 0 && bancho.tourneyMatchReferees.length === 0) {
+		if (bancho.duels.length === 0 && bancho.autoHosts.length === 0 && bancho.tourneyMatchReferees.length === 0 && bancho.knockoutLobbies.length === 0) {
 			process.exit(0);
 		}
-	}
+	},
+	pause(ms) {
+		return new Promise(resolve => setTimeout(resolve, ms));
+	},
 };
 
 async function executeFoundTask(bancho, nextTask) {

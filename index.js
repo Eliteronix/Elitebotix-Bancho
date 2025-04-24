@@ -29,6 +29,7 @@ bancho.lastUserMaps = {};
 bancho.duels = [];
 bancho.autoHosts = [];
 bancho.tourneyMatchReferees = [];
+bancho.knockoutLobbies = [];
 
 //Listen to messages
 bancho.on('PM', async (message) => {
