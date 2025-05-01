@@ -4,7 +4,7 @@ const { saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`
 const { DBElitebotixProcessQueue } = require('../dbObjects.js');
 
 module.exports = {
-	knockoutLobby: async function (bancho, bracketName, mappool, lobbyNumber, players, users, scoreversion) {
+	knockoutLobby: async function (bancho, mappool, players, users, scoreversion) {
 
 		let playerIds = [];
 		for (let i = 0; i < players.length; i++) {
@@ -13,7 +13,7 @@ module.exports = {
 
 		let mapIndex = 1;
 		//Increases knockoutmap number to start/continue with harder maps
-		while (12 - players.length > mapIndex && (lobbyNumber === 1 || lobbyNumber === 'custom')) {
+		while (12 - players.length > mapIndex) {
 			mapIndex++;
 		}
 
@@ -54,7 +54,7 @@ module.exports = {
 			try {
 				await reconnectToBanchoAndChannels(bancho);
 
-				channel = await bancho.createLobby(`MOTD: (${bracketName}) vs (Lobby #${lobbyNumber})`);
+				channel = await bancho.createLobby(`MOTD: (Custom) vs (Knockout Lobby)`);
 				bancho.knockoutLobbies.push(parseInt(channel.lobby.id));
 				break;
 			} catch (error) {
