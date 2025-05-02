@@ -1,5 +1,5 @@
 const osu = require('node-osu');
-const { pause, logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage } = require('../utils.js');
+const { pause, logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage, restartIfPossible } = require('../utils.js');
 const { saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 const { DBElitebotixProcessQueue } = require('../dbObjects.js');
 
@@ -262,20 +262,17 @@ module.exports = {
 			}
 
 			//Remove as many players as needed if there weren't enough players inactive
-			if (knockedOutPlayers < knockoutNumber) {
-				for (let i = 0; i < players.length && knockedOutPlayers < knockoutNumber; i++) {
-					if (knockedOutPlayerNames === '') {
-						knockedOutPlayerNames = `\`${players[i].osuName}\``;
-					} else {
-						knockedOutPlayerNames = `${knockedOutPlayerNames}, \`${players[i].osuName}\``;
-					}
-					knockedOutPlayers++;
-					knockedOutPlayerIds.push(players[i].osuUserId);
-					results.splice(i, 1);
-					players.splice(i, 1);
-					users.splice(i, 1);
-					i--;
+			while (knockedOutPlayers < knockoutNumber) {
+				if (knockedOutPlayerNames === '') {
+					knockedOutPlayerNames = `\`${players[players.length - 1].osuName}\``;
+				} else {
+					knockedOutPlayerNames = `${knockedOutPlayerNames}, \`${players[players.length - 1].osuName}\``;
 				}
+				knockedOutPlayers++;
+				knockedOutPlayerIds.push(players[players.length - 1].osuUserId);
+				results.splice(players.length - 1, 1);
+				players.splice(players.length - 1, 1);
+				users.splice(players.length - 1, 1);
 			}
 
 			await trySendMessage(channel, `Knocked out players this round: ${knockedOutPlayerNames}`);
