@@ -85,19 +85,19 @@ module.exports = {
 		while (lobby._beatmapId != mappool[mapIndex].id) {
 			await trySendMessage(channel, '!mp abort');
 			await trySendMessage(channel, `!mp map ${mappool[mapIndex].id} 0`);
-			await pause(5000);
+			await pause(1000);
 		}
 
 		//Check mods and set them if needed
 		if (mapIndex === 4 || mapIndex === 8) {
 			while (!lobby.mods || lobby.mods && lobby.mods.length === 0 || lobby.mods && lobby.mods[0].shortMod !== 'dt') {
 				await trySendMessage(channel, `!mp mods FreeMod${doubleTime}`);
-				await pause(5000);
+				await pause(1000);
 			}
 		} else {
 			while (lobby.mods || lobby.mods && lobby.mods.length !== 0) {
 				await trySendMessage(channel, `!mp mods FreeMod${doubleTime}`);
-				await pause(5000);
+				await pause(1000);
 			}
 		}
 
