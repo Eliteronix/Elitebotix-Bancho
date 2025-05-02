@@ -4,7 +4,7 @@ const { saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`
 const { DBElitebotixProcessQueue } = require('../dbObjects.js');
 
 module.exports = {
-	knockoutLobby: async function (bancho, mappool, players, users, scoreversion) {
+	knockoutLobby: async function (bancho, interaction, mappool, players, users, scoreversion) {
 
 		let playerIds = [];
 		for (let i = 0; i < players.length; i++) {
