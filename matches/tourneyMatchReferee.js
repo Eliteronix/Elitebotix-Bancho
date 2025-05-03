@@ -1,7 +1,6 @@
 const { DBElitebotixProcessQueue, DBElitebotixDiscordUsers, DBElitebotixOsuBeatmaps } = require('../dbObjects');
 const { logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage, updateCurrentMatchesChannel, restartIfPossible } = require('../utils');
 const osu = require('node-osu');
-const { logBroadcastEval } = require('../config.json');
 const { pause, saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 
 module.exports = {
@@ -158,6 +157,7 @@ module.exports = {
 				priority: 1,
 				date: new Date()
 			});
+			// eslint-disable-next-line no-unused-vars
 		} catch (e) {
 			//Nothing
 		}

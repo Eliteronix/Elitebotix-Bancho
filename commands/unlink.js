@@ -5,7 +5,7 @@ module.exports = {
 	name: 'unlink',
 	help: '!unlink - Unlink your discord account from your osu! account',
 	tag: 'general',
-	async execute(bancho, message, args) {
+	async execute(bancho, message) {
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['id', 'userId', 'osuVerified'],
 			where: {

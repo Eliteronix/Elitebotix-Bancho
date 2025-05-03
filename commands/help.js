@@ -5,7 +5,7 @@ module.exports = {
 	name: 'help',
 	help: '!help - List all commands or get info about a specific command.',
 	tag: 'general',
-	async execute(bancho, message, args) {
+	async execute(bancho, message) {
 		for (let i = 0; i < bancho.commands.length; i++) {
 			if (bancho.commands[i].name === 'help') continue; // Skip the help command itself
 

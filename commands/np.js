@@ -5,7 +5,7 @@ module.exports = {
 	name: 'np',
 	help: '/ /np - Get the pp values for the current beatmap with the current mods',
 	tag: 'general',
-	async execute(bancho, message, args) {
+	async execute(bancho, message) {
 		let beatmapId = message.message.match(/https?:\/\/osu\.ppy\.sh\/beatmapsets\/.+\/\d+/gm)[0].replace(/.+\//gm, '');
 
 		let modBits = 0;

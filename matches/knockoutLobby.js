@@ -54,9 +54,10 @@ module.exports = {
 			try {
 				await reconnectToBanchoAndChannels(bancho);
 
-				channel = await bancho.createLobby(`MOTD: (Custom) vs (Knockout Lobby)`);
+				channel = await bancho.createLobby('MOTD: (Custom) vs (Knockout Lobby)');
 				bancho.knockoutLobbies.push(parseInt(channel.lobby.id));
 				break;
+				// eslint-disable-next-line no-unused-vars
 			} catch (error) {
 				if (i === 2) {
 					return await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${interaction};I am having issues creating the lobby and the match has been aborted.\nPlease try again later.`, priority: 1, date: new Date() });

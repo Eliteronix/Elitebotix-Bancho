@@ -4,7 +4,7 @@ module.exports = {
 	name: 'lastrequests',
 	help: '!lastrequests - Shows the last 5 twitch requests again',
 	tag: 'general',
-	async execute(bancho, message, args) {
+	async execute(bancho, message) {
 		let userRequests = [];
 
 		for (let i = 0; i < bancho.sentRequests.length; i++) {

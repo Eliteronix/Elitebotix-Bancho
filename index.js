@@ -1,4 +1,5 @@
 //Log message upon starting the bot
+// eslint-disable-next-line no-console
 console.log('Bot is starting...');
 
 //require the dotenv node module
@@ -10,10 +11,10 @@ const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 const Banchojs = require('bancho.js');
 const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames, executeNextProcessQueueTask } = require('./utils');
 
-// eslint-disable-next-line no-undef
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1, botAccount: returnBoolean(process.env.BOTACCOUNT) });
 
 bancho.connect().then(() => {
+	// eslint-disable-next-line no-console
 	console.log('Connected to Bancho');
 
 	setTimeout(() => {
@@ -46,7 +47,7 @@ bancho.on('error', async (error) => {
 	await reconnectToBanchoAndChannels(bancho);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
 	console.error('Unhandled rejection, index.js:', reason);
 });
 

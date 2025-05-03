@@ -106,6 +106,7 @@ module.exports = {
 					await DBElitebotixProcessQueue.create({ guildId: 'None', task: 'interactionResponse', additions: `${settings.interaction};The lobby has been created. You have been sent an invite ingame.`, priority: 1, date: new Date() });
 				}
 				break;
+				// eslint-disable-next-line no-unused-vars
 			} catch (error) {
 				if (i === 4) {
 					if (settings.interaction) {
@@ -571,7 +572,7 @@ module.exports = {
 			}
 		});
 
-		lobby.on('matchFinished', async (results) => {
+		lobby.on('matchFinished', async () => {
 			let nextModPool = getNextModPool(true);
 
 			let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);

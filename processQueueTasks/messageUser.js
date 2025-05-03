@@ -1,4 +1,4 @@
-const { trySendMessage } = require("../utils");
+const { trySendMessage } = require('../utils');
 
 module.exports = {
 	async execute(bancho, processQueueEntry) {

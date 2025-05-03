@@ -54,12 +54,10 @@ module.exports = {
 			await destination.sendMessage(message);
 		} catch (e) {
 			if (e.message === 'Currently disconnected!') {
-				console.log('Currently disconnected! Trying to reconnect...', message);
 				await module.exports.reconnectToBanchoAndChannels(destination.banchojs);
 
 				await new Promise((resolve) => setTimeout(resolve, 5000));
 
-				console.log('Trying to send message again...', message);
 				await module.exports.trySendMessage(destination, message);
 			} else {
 				console.error('Error sending message to destination: ', e);
@@ -426,6 +424,7 @@ module.exports = {
 		function onConnectedHandler(addr, port) {
 			// eslint-disable-next-line no-console
 			console.log(`* Connected to ${addr}:${port}`);
+			// eslint-disable-next-line no-console
 			console.log('Connected to the following channels: ', twitchChannels);
 		}
 
