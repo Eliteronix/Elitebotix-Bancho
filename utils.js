@@ -150,35 +150,13 @@ module.exports = {
 				let discordName = content.split('#')[0];
 				let discordDiscriminator = content.split('#')[1];
 
-				let discordUser = client.users.cache.find(user => user.username === discordName && user.discriminator === discordDiscriminator);
-
-				if (!discordUser) {
-					return;
-				}
-
-				let dbDiscordUser = await DBElitebotixDiscordUsers.findOne({
-					attributes: ['id', 'twitchVerified', 'twitchName'],
-					where: {
-						userId: discordUser.id,
-						twitchName: target.substring(1).toLowerCase(),
-					}
+				await DBElitebotixProcessQueue.create({
+					guildId: 'none',
+					task: 'verifyTwitch',
+					additions: `${target.substring(1)};${discordName};${discordDiscriminator}`,
+					date: new Date(),
+					priority: 0
 				});
-
-				if (!dbDiscordUser) {
-					return;
-				}
-
-				dbDiscordUser.twitchVerified = true;
-				await dbDiscordUser.save();
-
-				twitchClient.say(target.substring(1), 'Your connection has been verified.');
-
-				try {
-					await discordUser.send(`Your connection to the twitch account ${dbDiscordUser.twitchName} has been verified!`);
-				} catch (e) {
-					console.error(e);
-				}
-				return;
 			}
 
 			if (msg.toLowerCase() === '!mp') {
