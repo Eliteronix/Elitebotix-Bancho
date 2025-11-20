@@ -11,6 +11,25 @@ const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 const Banchojs = require('bancho.js');
 const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames, executeNextProcessQueueTask } = require('./utils');
 
+const http = require('http');
+const url = require('url');
+const { register } = require('./metrics.js');
+
+// Define the HTTP server
+const server = http.createServer(async (req, res) => {
+	// Retrieve route from request object
+	const route = url.parse(req.url).pathname;
+
+	if (route === '/metrics') {
+		// Return all metrics the Prometheus exposition format
+		res.setHeader('Content-Type', register.contentType);
+		res.end(await register.metrics());
+	}
+});
+
+// Start the HTTP server which exposes the metrics on http://localhost:8082/metrics
+server.listen(8082);
+
 const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, password: process.env.OSUIRC, apiKey: process.env.OSUTOKENV1, botAccount: returnBoolean(process.env.BOTACCOUNT) });
 
 bancho.connect().then(() => {

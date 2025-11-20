@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const tmi = require('tmi.js');
 const { getOsuBeatmap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const { uniqueOsuUsersInTheLastMinute, uniqueOsuUsersInTheLastHour, uniqueOsuUsersInTheLastDay, uniqueOsuUsersInTheLastWeek, uniqueOsuUsers } = require('./metrics.js');
 
 module.exports = {
 	async addMatchMessage(matchId, array, user, message) {
@@ -483,6 +484,59 @@ module.exports = {
 	pause(ms) {
 		return new Promise(resolve => setTimeout(resolve, ms));
 	},
+	async updateUniqueOsuUsers(osuUserId) {
+		const fs = require('fs');
+
+		let uniqueUsersData = {};
+
+		if (fs.existsSync('./uniqueOsuUsers.json')) {
+			let rawData = fs.readFileSync('./uniqueOsuUsers.json');
+			uniqueUsersData = JSON.parse(rawData);
+		}
+
+		uniqueUsersData[osuUserId] = Date.now();
+
+		// Update the file
+		fs.writeFileSync('./uniqueOsuUsers.json', JSON.stringify(uniqueUsersData));
+
+		// Calculate unique users in different timeframes
+		let now = Date.now();
+		let oneMinuteAgo = now - 60000;
+		let oneHourAgo = now - 3600000;
+		let oneDayAgo = now - 86400000;
+		let oneWeekAgo = now - 604800000;
+
+		let countLastMinute = 0;
+		let countLastHour = 0;
+		let countLastDay = 0;
+		let countLastWeek = 0;
+
+		for (let userId in uniqueUsersData) {
+			let lastActive = uniqueUsersData[userId];
+
+			if (lastActive >= oneWeekAgo) {
+				countLastWeek++;
+
+				if (lastActive >= oneDayAgo) {
+					countLastDay++;
+
+					if (lastActive >= oneHourAgo) {
+						countLastHour++;
+
+						if (lastActive >= oneMinuteAgo) {
+							countLastMinute++;
+						}
+					}
+				}
+			}
+		}
+
+		uniqueOsuUsersInTheLastMinute.set(countLastMinute);
+		uniqueOsuUsersInTheLastHour.set(countLastHour);
+		uniqueOsuUsersInTheLastDay.set(countLastDay);
+		uniqueOsuUsersInTheLastWeek.set(countLastWeek);
+		uniqueOsuUsers.set(Object.keys(uniqueUsersData).length);
+	}
 };
 
 async function executeFoundTask(bancho, nextTask) {

@@ -1,4 +1,4 @@
-const { logMatchCreation, addMatchMessage, trySendMessage, restartIfPossible, reconnectToBanchoAndChannels } = require('../utils');
+const { logMatchCreation, addMatchMessage, trySendMessage, restartIfPossible, reconnectToBanchoAndChannels, updateUniqueOsuUsers } = require('../utils');
 const { DBElitebotixDiscordUsers, DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue } = require('../dbObjects');
 const { Op } = require('sequelize');
 const { getNextMap } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
@@ -122,6 +122,8 @@ module.exports = {
 		let matchMessages = [];
 
 		channel.on('message', async (msg) => {
+			updateUniqueOsuUsers(msg.user.id);
+
 			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 		});
 
@@ -449,6 +451,8 @@ module.exports = {
 		}, 600000);
 
 		lobby.on('playerJoined', async (obj) => {
+			updateUniqueOsuUsers(obj.player.user.id);
+
 			noPlayerJoined = false;
 
 			if (discordUser.osuUserId === obj.player.user.id.toString()) {

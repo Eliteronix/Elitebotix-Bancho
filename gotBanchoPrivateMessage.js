@@ -1,15 +1,19 @@
 const fs = require('fs');
-const { trySendMessage } = require('./utils');
+const { trySendMessage, updateUniqueOsuUsers } = require('./utils');
 const { developers } = require('./config.json');
+const { osuApiRequests } = require('./metrics.js');
 
 // Replace utils and client dependencies
 
 module.exports = async function (bancho, message) {
 	if (message.self) return;
 
+	osuApiRequests.inc();
 	await message.user.fetchFromAPI();
 
 	if (message.user.username === process.env.OSUNAME) return;
+
+	updateUniqueOsuUsers(message.user.id);
 
 	if (!bancho.commands) {
 		//get all command files

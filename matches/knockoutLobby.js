@@ -1,7 +1,8 @@
 const osu = require('node-osu');
-const { pause, logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage, restartIfPossible } = require('../utils.js');
+const { pause, logMatchCreation, addMatchMessage, reconnectToBanchoAndChannels, trySendMessage, restartIfPossible, updateUniqueOsuUsers } = require('../utils.js');
 const { saveOsuMultiScores } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 const { DBElitebotixProcessQueue } = require('../dbObjects.js');
+const { osuApiRequests } = require('../metrics.js');
 
 module.exports = {
 	execute: async function (bancho, interaction, mappool, players, users, scoreversion) {
@@ -68,6 +69,8 @@ module.exports = {
 		}
 
 		channel.on('message', async (msg) => {
+			updateUniqueOsuUsers(msg.user.id);
+
 			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 		});
 
@@ -181,6 +184,8 @@ module.exports = {
 		});
 
 		lobby.on('playerJoined', async (obj) => {
+			updateUniqueOsuUsers(obj.player.user.id);
+
 			if (!playerIds.includes(obj.player.user.id.toString())) {
 				trySendMessage(channel, `!mp kick #${obj.player.user.id}`);
 			} else if (lobbyStatus === 'Joining phase') {
@@ -305,6 +310,7 @@ module.exports = {
 					parseNumeric: false // Parse numeric values into numbers/floats, excluding ids
 				});
 
+				osuApiRequests.inc();
 				osuApi.getMatch({ mp: lobby.id })
 					.then(async (match) => {
 						saveOsuMultiScores(match);
@@ -334,6 +340,7 @@ module.exports = {
 					parseNumeric: false // Parse numeric values into numbers/floats, excluding ids
 				});
 
+				osuApiRequests.inc();
 				osuApi.getMatch({ mp: lobby.id })
 					.then(async (match) => {
 						saveOsuMultiScores(match);

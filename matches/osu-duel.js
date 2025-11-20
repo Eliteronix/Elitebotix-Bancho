@@ -4,6 +4,7 @@ const { getUserDuelStarRating, saveOsuMultiScores, getNextMap, humanReadable } =
 const osu = require('node-osu');
 const { osuFilterWords } = require('../config.json');
 const { Op } = require('sequelize');
+const { osuApiRequests } = require('../metrics.js');
 
 module.exports = {
 	async execute(bancho, interaction, averageStarRating, lowerBound, upperBound, bestOf, onlyRanked, users, queued) {
@@ -147,6 +148,8 @@ module.exports = {
 		let usersOnline = [];
 
 		channel.on('message', async (msg) => {
+			updateUniqueOsuUsers(msg.user.id);
+
 			addMatchMessage(lobby.id, matchMessages, msg.user.ircUsername, msg.message);
 
 			if (usersToCheck.length && msg.user.ircUsername === 'BanchoBot') {
@@ -305,6 +308,8 @@ module.exports = {
 		});
 
 		lobby.on('playerJoined', async (obj) => {
+			updateUniqueOsuUsers(obj.player.user.id);
+
 			orderMatchPlayers(lobby, channel, [...users]);
 
 			//Add to an array of joined users for requeueing
@@ -513,6 +518,7 @@ module.exports = {
 					parseNumeric: false // Parse numeric values into numbers/floats, excluding ids
 				});
 
+				osuApiRequests.inc();
 				osuApi.getMatch({ mp: lobby.id })
 					.then(async (match) => {
 						saveOsuMultiScores(match);
@@ -611,6 +617,7 @@ module.exports = {
 					parseNumeric: false // Parse numeric values into numbers/floats, excluding ids
 				});
 
+				osuApiRequests.inc();
 				osuApi.getMatch({ mp: lobby.id })
 					.then(async (match) => {
 						await saveOsuMultiScores(match);
