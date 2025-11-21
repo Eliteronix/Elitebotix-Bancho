@@ -48,6 +48,42 @@ const uniqueOsuUsers = new client.Gauge({
 });
 register.registerMetric(uniqueOsuUsers);
 
+const elitebotixProcessQueueAccesses = new client.Gauge({
+	name: 'database_elitebotix_processQueue',
+	help: 'Database elitebotix-processQueue accessed',
+});
+register.registerMetric(elitebotixProcessQueueAccesses);
+
+const elitebotixBanchoProcessQueueAccesses = new client.Gauge({
+	name: 'database_elitebotix_bancho_processQueue',
+	help: 'Database elitebotix-bancho-processQueue accessed',
+});
+register.registerMetric(elitebotixBanchoProcessQueueAccesses);
+
+const discordUsersAccesses = new client.Gauge({
+	name: 'database_discordUsers',
+	help: 'Database discordUsers accessed',
+});
+register.registerMetric(discordUsersAccesses);
+
+const multiMatchesAccesses = new client.Gauge({
+	name: 'database_multiMatches',
+	help: 'Database multiMatches accessed',
+});
+register.registerMetric(multiMatchesAccesses);
+
+const multiGameScoresAccesses = new client.Gauge({
+	name: 'database_multiGameScores',
+	help: 'Database multiGameScores accessed',
+});
+register.registerMetric(multiGameScoresAccesses);
+
+const beatmapsAccesses = new client.Gauge({
+	name: 'database_beatmaps',
+	help: 'Database beatmaps accessed',
+});
+register.registerMetric(beatmapsAccesses);
+
 // Export everything you need
 module.exports = {
 	client,
@@ -58,4 +94,10 @@ module.exports = {
 	uniqueOsuUsersInTheLastDay,
 	uniqueOsuUsersInTheLastWeek,
 	uniqueOsuUsers,
+	elitebotixProcessQueueAccesses,
+	elitebotixBanchoProcessQueueAccesses,
+	discordUsersAccesses,
+	multiMatchesAccesses,
+	multiGameScoresAccesses,
+	beatmapsAccesses,
 };
