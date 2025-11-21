@@ -1,5 +1,5 @@
 const { DBElitebotixOsuMultiGameScores, DBElitebotixProcessQueue, DBElitebotixOsuMultiMatches } = require('../dbObjects');
-const { logMatchCreation, updateQueueChannels, addMatchMessage, restartIfPossible, reconnectToBanchoAndChannels, trySendMessage } = require('../utils');
+const { logMatchCreation, updateQueueChannels, addMatchMessage, restartIfPossible, reconnectToBanchoAndChannels, trySendMessage, updateUniqueOsuUsers } = require('../utils');
 const { getUserDuelStarRating, saveOsuMultiScores, getNextMap, humanReadable } = require(`${process.env.ELITEBOTIXROOTPATH}/utils`);
 const osu = require('node-osu');
 const { osuFilterWords } = require('../config.json');
