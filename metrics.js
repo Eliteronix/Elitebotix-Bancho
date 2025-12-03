@@ -84,6 +84,12 @@ const beatmapsAccesses = new client.Gauge({
 });
 register.registerMetric(beatmapsAccesses);
 
+const totalErrorCount = new client.Counter({
+	name: 'total_errors_count',
+	help: 'Total error count',
+});
+register.registerMetric(totalErrorCount);
+
 // Export everything you need
 module.exports = {
 	client,
@@ -100,4 +106,5 @@ module.exports = {
 	multiMatchesAccesses,
 	multiGameScoresAccesses,
 	beatmapsAccesses,
+	totalErrorCount,
 };

@@ -5,6 +5,14 @@ console.log('Bot is starting...');
 //require the dotenv node module
 require('dotenv').config();
 
+const originalConsoleError = console.error;
+const { totalErrorCount } = require('./metrics.js');
+
+console.error = function (...args) {
+	totalErrorCount.inc();
+	originalConsoleError.apply(console, args);
+};
+
 //Get gotBanchoPrivateMessage
 const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 
