@@ -494,7 +494,9 @@ module.exports = {
 			uniqueUsersData = JSON.parse(rawData);
 		}
 
-		uniqueUsersData[osuUserId] = Date.now();
+		if (osuUserId) {
+			uniqueUsersData[osuUserId] = Date.now();
+		}
 
 		// Update the file
 		fs.writeFileSync('./uniqueOsuUsers.json', JSON.stringify(uniqueUsersData));

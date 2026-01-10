@@ -17,7 +17,7 @@ console.error = function (...args) {
 const gotBanchoPrivateMessage = require('./gotBanchoPrivateMessage');
 
 const Banchojs = require('bancho.js');
-const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames, executeNextProcessQueueTask } = require('./utils');
+const { reconnectToBanchoAndChannels, twitchConnect, updateTwitchNames, executeNextProcessQueueTask, updateUniqueOsuUsers } = require('./utils');
 
 const http = require('http');
 const url = require('url');
@@ -77,6 +77,8 @@ bancho.on('error', async (error) => {
 process.on('unhandledRejection', (reason) => {
 	console.error('Unhandled rejection, index.js:', reason);
 });
+
+updateUniqueOsuUsers();
 
 setTimeout(() => {
 	// eslint-disable-next-line no-console
