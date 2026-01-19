@@ -130,6 +130,15 @@ module.exports = {
 		twitchClient.on('message', onMessageHandler);
 		twitchClient.on('connected', onConnectedHandler);
 
+		twitchClient.on('notice', (channel, msgid, message) => {
+			if (msgid === 'msg_banned') {
+				console.log(`[TWITCH] Bot banned in ${channel}, skipping`);
+
+				// Optional: part the channel so it doesn't retry
+				twitchClient.part(channel).catch(() => { });
+			}
+		});
+
 		// Connect to Twitch:
 		await twitchClient.connect();
 
