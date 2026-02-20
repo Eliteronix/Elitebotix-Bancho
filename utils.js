@@ -130,12 +130,25 @@ module.exports = {
 		twitchClient.on('message', onMessageHandler);
 		twitchClient.on('connected', onConnectedHandler);
 
-		twitchClient.on('notice', (channel, msgid, message) => {
+		twitchClient.on('notice', async (channel, msgid, message) => {
 			if (msgid === 'msg_banned') {
-				console.log(`[TWITCH] Bot banned in ${channel}, skipping`);
+				console.log(`[TWITCH] Bot banned in ${channel}, skipping and removing from channels list.`);
 
 				// Optional: part the channel so it doesn't retry
 				twitchClient.part(channel).catch(() => { });
+
+				// Remove the channel from the channels list
+				await DBElitebotixDiscordUsers.update({
+					twitchName: null,
+					twitchId: null,
+					twitchVerified: false,
+					twitchOsuMapSync: false,
+					twitchOsuMatchCommand: false
+				}, {
+					where: {
+						twitchName: channel.substring(1)
+					},
+				});
 			}
 		});
 
