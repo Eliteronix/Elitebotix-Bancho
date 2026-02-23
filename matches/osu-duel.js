@@ -555,6 +555,8 @@ module.exports = {
 				mapIndex++;
 				lobbyStatus = 'Waiting for start';
 
+				let date = new Date();
+
 				await trySendMessage(channel, 'Looking for a map...');
 
 				let nextMap = null;
@@ -562,9 +564,17 @@ module.exports = {
 				while (tries === 0 || lobby._beatmapId != nextMap.beatmapId) {
 					if (tries % 5 === 0) {
 						if (scores[0] + scores[1] === bestOf - 1) {
+							console.log('Looking for a map for the duel match lobby ' + lobby.id, 'TieBreaker');
+
 							nextMap = await getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
+
+							console.log('Found map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
 						} else {
+							console.log('Looking for a map for the duel match lobby ' + lobby.id, modPools[mapIndex]);
+
 							nextMap = await getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
+
+							console.log('Found map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
 						}
 
 						avoidMaps.push(nextMap.beatmapId);
