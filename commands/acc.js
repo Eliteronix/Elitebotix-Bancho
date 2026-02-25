@@ -20,7 +20,7 @@ module.exports = {
 
 		let beatmap = await getOsuBeatmap({ beatmapId: oldBeatmap.beatmapId, modBits: oldBeatmap.modBits });
 
-		let accPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, acc, 0, beatmap.maxCombo);
+		let accPP = await getOsuPP(beatmap.beatmapId, beatmap, null, beatmap.mods, acc, 0, beatmap.maxCombo);
 
 		let mods = getMods(beatmap.mods);
 

@@ -48,10 +48,10 @@ module.exports = {
 
 		bancho.lastUserMaps[message.user.id.toString()] = { beatmapId: beatmapId, modBits: modBits };
 
-		let firstPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 95.00, 0, beatmap.maxCombo);
-		let secondPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 98.00, 0, beatmap.maxCombo);
-		let thirdPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 99.00, 0, beatmap.maxCombo);
-		let fourthPP = await getOsuPP(beatmap.beatmapId, null, beatmap.mods, 100.00, 0, beatmap.maxCombo);
+		let firstPP = await getOsuPP(beatmap.beatmapId, beatmap, null, beatmap.mods, 95.00, 0, beatmap.maxCombo);
+		let secondPP = await getOsuPP(beatmap.beatmapId, beatmap, null, beatmap.mods, 98.00, 0, beatmap.maxCombo);
+		let thirdPP = await getOsuPP(beatmap.beatmapId, beatmap, null, beatmap.mods, 99.00, 0, beatmap.maxCombo);
+		let fourthPP = await getOsuPP(beatmap.beatmapId, beatmap, null, beatmap.mods, 100.00, 0, beatmap.maxCombo);
 
 		let mods = getMods(beatmap.mods);
 
