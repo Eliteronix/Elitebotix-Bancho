@@ -314,7 +314,7 @@ module.exports = {
 				});
 
 				if (discordUser && context['display-name'].toLowerCase() !== discordUser.twitchName.toLowerCase()) {
-					const IRCUser = await bancho.getUser(discordUser.osuName);
+					const IRCUser = await bancho.getUserById(discordUser.osuUserId);
 
 					let prefix = [];
 					if (context.mod) {
