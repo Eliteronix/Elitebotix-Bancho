@@ -178,6 +178,7 @@ module.exports = {
 					await trySendMessage(channel, '!password - Allows you to change the password.');
 					await trySendMessage(channel, '!skip - Skips the currently selected map.');
 					await trySendMessage(channel, '!timeout - Increases the timer to 5 minutes.');
+					await trySendMessage(channel, '!retry - Switches to the previous map.');
 					await trySendMessage(channel, '!mods - Allows you to change the played mods. (Ex: "NM,HR,DT")');
 					await trySendMessage(channel, '!sr - Allows you to change the SR of all mods (Ex: "!sr 5.6")');
 					await trySendMessage(channel, '!nm - Allows you to change the NM SR (Ex: "!nm 5.6")');
