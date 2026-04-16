@@ -86,6 +86,10 @@ module.exports = {
 		//Add TieBreaker
 		modPools.push('FreeMod');
 
+		// Actual prefetch runs only after lobby creation succeeds
+		let prefetchedFirstMap = null;
+		let prefetchedFirstMapPool = null;
+
 		//Set up the lobby
 		let channel = null;
 
@@ -164,6 +168,15 @@ module.exports = {
 		const lobby = channel.lobby;
 		logMatchCreation(lobby.name, lobby.id);
 
+		// Prefetch the first map only after the lobby is successfully created
+		let initialMapPool = bestOf === 1 ? 'TieBreaker' : modPools[0];
+		let initialMapDate = new Date();
+		console.log('Prefetching first map for the duel match lobby ' + lobby.id, initialMapPool);
+		prefetchedFirstMap = await getNextMap(initialMapPool, lowerBound, upperBound, onlyRanked, avoidMaps);
+		console.log('Prefetched first map ' + prefetchedFirstMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - initialMapDate.getTime()) / 1000 + ' seconds');
+		avoidMaps.push(prefetchedFirstMap.beatmapId);
+		prefetchedFirstMapPool = initialMapPool;
+
 		const password = Math.random().toString(36).substring(8);
 
 		let matchMessages = [];
@@ -237,8 +250,68 @@ module.exports = {
 		let joinedUsers = [];
 
 		let currentMapSelected = false;
+		// Cache exactly one upcoming map so the next round can be set instantly after results
+		let prefetchedNextMap = null;
+		let prefetchedMapPool = null;
+		let prefetchedForMapIndex = null;
+		let prefetchPromise = null;
 
 		let waitedForMapdownload = false;
+
+		// Resolve which pool should be used for a future map index (including TB)
+		function getTargetPoolForMapIndex(targetMapIndex) {
+			if (targetMapIndex > bestOf - 1) {
+				return null;
+			}
+
+			if (targetMapIndex === bestOf - 1) {
+				return 'TieBreaker';
+			}
+
+			return modPools[targetMapIndex];
+		}
+
+		// Prefetch the next map while the current map is actively being played
+		async function prefetchNextMapForCurrentMap() {
+			if (bestOf === 1) {
+				return;
+			}
+
+			const currentMapIndex = mapIndex;
+			const nextMapIndex = currentMapIndex + 1;
+			const targetPool = getTargetPoolForMapIndex(nextMapIndex);
+
+			if (!targetPool) {
+				return;
+			}
+
+			// Avoid duplicate prefetch requests for the same currently played map
+			if (prefetchedForMapIndex === currentMapIndex && (prefetchedNextMap || prefetchPromise)) {
+				return;
+			}
+
+			prefetchedForMapIndex = currentMapIndex;
+			prefetchedNextMap = null;
+			prefetchedMapPool = null;
+
+			prefetchPromise = (async () => {
+				let date = new Date();
+
+				console.log('Prefetching map for the duel match lobby ' + lobby.id, targetPool);
+
+				let nextMap = await getNextMap(targetPool, lowerBound, upperBound, onlyRanked, avoidMaps);
+
+				console.log('Prefetched map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
+
+				avoidMaps.push(nextMap.beatmapId);
+				prefetchedNextMap = nextMap;
+				prefetchedMapPool = targetPool;
+			})().finally(() => {
+				prefetchPromise = null;
+			});
+
+			await prefetchPromise;
+		}
 
 		//Add discord messages and also ingame invites for the timers
 		channel.on('message', async (msg) => {
@@ -297,13 +370,20 @@ module.exports = {
 						await trySendMessage(channel, '!mp start 5');
 						await new Promise(resolve => setTimeout(resolve, 3000));
 						await lobby.updateSettings();
-						lobbyStatus === 'Map being played';
+						lobbyStatus = 'Map being played';
 					} else {
 						waitedForMapdownload = true;
 						await trySendMessage(channel, 'A player is missing the map. Waiting only 1 minute longer.');
 						await trySendMessage(channel, '!mp timer 60');
 					}
 				}
+			} else if (msg.user.ircUsername === 'BanchoBot' && msg.message === 'The match has started!') {
+				// map can only be changed after finish, not during play
+				lobbyStatus = 'Map being played';
+
+				prefetchNextMapForCurrentMap().catch((error) => {
+					console.error('Error prefetching next duel map for lobby ' + lobby.id + ':', error);
+				});
 			}
 		});
 
@@ -335,24 +415,26 @@ module.exports = {
 
 					let date = new Date();
 
+					let firstMapPool = bestOf === 1 ? 'TieBreaker' : modPools[mapIndex];
 					let nextMap = null;
+
+					// Reuse the first prefetched map when it matches the expected first pool
+					if (mapIndex === 0 && prefetchedFirstMap && prefetchedFirstMapPool === firstMapPool) {
+						nextMap = prefetchedFirstMap;
+					}
+
 					let tries = 0;
 					while (tries === 0 || lobby._beatmapId != nextMap.beatmapId) {
 						if (tries % 5 === 0) {
-							if (bestOf === 1) {
-								console.log('Looking for a map for the duel match lobby ' + lobby.id, 'TieBreaker');
+							if (!nextMap || tries) {
+								console.log('Looking for a map for the duel match lobby ' + lobby.id, firstMapPool);
 
-								nextMap = await getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
-
-								console.log('Found map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
-							} else {
-								console.log('Looking for a map for the duel match lobby ' + lobby.id, modPools[mapIndex]);
-
-								nextMap = await getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
+								nextMap = await getNextMap(firstMapPool, lowerBound, upperBound, onlyRanked, avoidMaps);
 
 								console.log('Found map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
+
+								avoidMaps.push(nextMap.beatmapId);
 							}
-							avoidMaps.push(nextMap.beatmapId);
 						}
 
 						await trySendMessage(channel, '!mp abort');
@@ -361,6 +443,9 @@ module.exports = {
 						await lobby.updateSettings();
 						tries++;
 					}
+
+					prefetchedFirstMap = null;
+					prefetchedFirstMapPool = null;
 
 					let noFail = 'NF';
 					if (modPools[mapIndex] === 'FreeMod') {
@@ -440,7 +525,7 @@ module.exports = {
 				await trySendMessage(channel, '!mp start 5');
 				await new Promise(resolve => setTimeout(resolve, 3000));
 				await lobby.updateSettings();
-				lobbyStatus === 'Map being played';
+				lobbyStatus = 'Map being played';
 			} else if (!currentMapSelected && lobbyStatus === 'Waiting for start' && playersInLobby === users.length) {
 				await trySendMessage(channel, 'Give me a moment, I am still searching for the best map ;w;');
 			}
@@ -559,25 +644,30 @@ module.exports = {
 
 				await trySendMessage(channel, 'Looking for a map...');
 
+				let targetPool = scores[0] + scores[1] === bestOf - 1 ? 'TieBreaker' : modPools[mapIndex];
 				let nextMap = null;
+				if (prefetchedForMapIndex === mapIndex - 1 && prefetchPromise) {
+					// If prefetch is still running, wait once here before falling back.
+					await prefetchPromise;
+				}
+
+				// Reuse prefetched map only when it was prepared for the previous round and same pool.
+				if (prefetchedForMapIndex === mapIndex - 1 && prefetchedNextMap && prefetchedMapPool === targetPool) {
+					nextMap = prefetchedNextMap;
+				}
+
 				let tries = 0;
 				while (tries === 0 || lobby._beatmapId != nextMap.beatmapId) {
 					if (tries % 5 === 0) {
-						if (scores[0] + scores[1] === bestOf - 1) {
-							console.log('Looking for a map for the duel match lobby ' + lobby.id, 'TieBreaker');
+						if (!nextMap || tries) {
+							console.log('Looking for a map for the duel match lobby ' + lobby.id, targetPool);
 
-							nextMap = await getNextMap('TieBreaker', lowerBound, upperBound, onlyRanked, avoidMaps);
-
-							console.log('Found map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
-						} else {
-							console.log('Looking for a map for the duel match lobby ' + lobby.id, modPools[mapIndex]);
-
-							nextMap = await getNextMap(modPools[mapIndex], lowerBound, upperBound, onlyRanked, avoidMaps);
+							nextMap = await getNextMap(targetPool, lowerBound, upperBound, onlyRanked, avoidMaps);
 
 							console.log('Found map ' + nextMap.beatmapId + ' for the duel match lobby ' + lobby.id + ' after ' + (new Date().getTime() - date.getTime()) / 1000 + ' seconds');
+
+							avoidMaps.push(nextMap.beatmapId);
 						}
-
-						avoidMaps.push(nextMap.beatmapId);
 					}
 
 					await trySendMessage(channel, '!mp abort');
@@ -586,6 +676,10 @@ module.exports = {
 					await lobby.updateSettings();
 					tries++;
 				}
+
+				prefetchedNextMap = null;
+				prefetchedMapPool = null;
+				prefetchedForMapIndex = null;
 
 				let noFail = 'NF';
 				if (modPools[mapIndex] === 'FreeMod') {
