@@ -137,6 +137,7 @@ module.exports = {
 
 		let poolIterator = 0;
 		let currentPotentialMods = [];
+		let previousBeatmapId = null;
 
 		for (let i = 0; i < 10; i++) {
 			getNextModPool();
@@ -177,6 +178,7 @@ module.exports = {
 					await trySendMessage(channel, '!password - Allows you to change the password.');
 					await trySendMessage(channel, '!skip - Skips the currently selected map.');
 					await trySendMessage(channel, '!timeout - Increases the timer to 5 minutes.');
+					await trySendMessage(channel, '!retry - Switches to the previous map.');
 					await trySendMessage(channel, '!mods - Allows you to change the played mods. (Ex: "NM,HR,DT")');
 					await trySendMessage(channel, '!sr - Allows you to change the SR of all mods (Ex: "!sr 5.6")');
 					await trySendMessage(channel, '!nm - Allows you to change the NM SR (Ex: "!nm 5.6")');
@@ -187,6 +189,7 @@ module.exports = {
 				} else if (msg.message === '!skip') {
 					await trySendMessage(channel, '!mp aborttimer');
 					await trySendMessage(channel, 'Looking for new map...');
+					previousBeatmapId = lobby._beatmapId;
 					let nextModPool = getNextModPool(true);
 
 					let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
@@ -402,6 +405,25 @@ module.exports = {
 
 					await trySendMessage(channel, `!mp set 0 ${winCondition}`);
 					await trySendMessage(channel, 'The condition has been adapted.');
+				} else if (msg.message === '!retry') {
+					if (previousBeatmapId) {
+						await trySendMessage(channel, '!mp abort');
+						await trySendMessage(channel, 'Retrying the previous map...');
+						await trySendMessage(channel, `!mp map ${previousBeatmapId}`);
+						let tries = 0;
+						while (lobby._beatmapId != previousBeatmapId) {
+							if (tries % 5 === 0 && tries) {
+								// Failed to load the map after multiple tries
+								break;
+							}
+							await new Promise(resolve => setTimeout(resolve, 5000));
+							await lobby.updateSettings();
+							tries++;
+						}
+						await trySendMessage(channel, '!mp timer 120');
+					} else {
+						await trySendMessage(channel, 'No previous map to retry.');
+					}
 				}
 
 				if (modUpdate) {
@@ -472,6 +494,7 @@ module.exports = {
 				let nextModPool = getNextModPool(true);
 
 				let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
+				previousBeatmapId = lobby._beatmapId;
 				let tries = 0;
 				while (lobby._beatmapId != beatmap.beatmapId) {
 					if (tries % 5 === 0 && tries) {
@@ -580,6 +603,7 @@ module.exports = {
 			let nextModPool = getNextModPool(true);
 
 			let beatmap = await getPoolBeatmap(nextModPool, nmStarRating, hdStarRating, hrStarRating, dtStarRating, fmStarRating, avoidMaps);
+			previousBeatmapId = lobby._beatmapId;
 			let tries = 0;
 			while (lobby._beatmapId != beatmap.beatmapId) {
 				if (tries % 5 === 0 && tries) {
