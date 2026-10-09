@@ -42,7 +42,7 @@ const bancho = new Banchojs.BanchoClient({ username: process.env.OSUNAME, passwo
 
 bancho.connect().then(() => {
 	// eslint-disable-next-line no-console
-	console.log('Connected to Bancho');
+	console.log('Connected to Bancho as ' + process.env.OSUNAME);
 
 	setTimeout(() => {
 		executeProcessQueue(bancho);

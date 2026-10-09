@@ -11,7 +11,7 @@ module.exports = {
 		let discordUser = await DBElitebotixDiscordUsers.findOne({
 			attributes: ['osuUserId'],
 			where: {
-				osuUserId: message.user.id,
+				osuUserId: message.user.id.toString(),
 				osuVerified: true
 			}
 		});
