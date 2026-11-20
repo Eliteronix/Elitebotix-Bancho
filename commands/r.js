@@ -70,7 +70,7 @@ module.exports = {
 				'osuFreeModDuelStarRating',
 			],
 			where: {
-				osuUserId: osuUserId
+				osuUserId: osuUserId.toString(),
 			},
 		});
 
